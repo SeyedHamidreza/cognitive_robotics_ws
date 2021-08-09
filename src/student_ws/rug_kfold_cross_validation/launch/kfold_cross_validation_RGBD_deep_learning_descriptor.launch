@@ -1,0 +1,184 @@
+<?xml version="1.0"?>
+<!-- This is a launch file for an example on how to bringup of the race perception architecture-->
+<launch>
+<!-- this flag will configure the system to run with nodes or nodelets-->
+<arg name="use_nodelets" default="0"/>
+<arg name="use_standalone" default="false"/>
+<!--<arg name="use_pr2" default="0"/>-->
+<arg name="pdb_source" default="default_pdb"/>
+
+
+
+<group ns="/perception">
+
+	<!-- _________________________________-->
+	<!--|                                 |-->
+	<!--|             Memory 		      |-->
+	<!--|_________________________________|-->
+
+	<!--Launches a race_perception_db node(let) -->
+	<include file="$(find race_perception_db)/launch/bringup.launch">
+		<arg name="use_nodelets" value="$(arg use_nodelets)" />
+		<arg name="pdb_source" value="$(arg pdb_source)" />
+		<arg name="name" value="perception_db" />
+	</include>
+
+	
+	<!-- Launches the nodelet_manager -->
+	<group if="$(arg use_nodelets)">
+	    <node pkg="nodelet" type="nodelet" name="nodelet_manager" args="manager" output="screen" required="true">
+		<param name="num_worker_threads" value="10"/>
+	    </node>
+	</group>
+
+	<!-- _________________________________-->
+	<!--|                                 |-->
+	<!--|           run network 	      |-->
+	<!--|_________________________________|-->
+
+	<!-- Be sure that you already run the proper deep learning service e.g., rosrun race_deep_learning_feature_extraction multi_view_xception_service_max_pooling.py -->
+	<!-- it is a good idea to write a batch script to run network model first, wait for 10 secs and then run this launch file  -->
+
+	<group ns="/pipeline1">
+		
+		<!-- _________________________________-->
+		<!--|                                 |-->
+		<!--|         Global Param            |-->
+		<!--|_________________________________|-->
+
+		<!-- ****************************************  -->
+		<!--       set name_of_approach parameter      -->
+		<!-- ****************************************  -->
+
+			<arg name="name_of_approach" default="COR_2021_DL" />
+			<param name="/perception/name_of_approach" type="string" value = "$(arg name_of_approach)"/>
+
+
+		<!-- ****************************************  -->
+		<!--       set dataset_path parameter          -->
+		<!-- ****************************************  -->
+
+			<!-- restaurant_object_dataset = "$(env HOME)/datasets/restaurant_object_dataset/"; -->
+			<!-- model_net_10_pcd = "$(env HOME)/datasets/modelnet10/"; -->
+
+			<arg name="dataset_path" default="$(env HOME)/datasets/restaurant_object_dataset/" />
+			<param name="/perception/dataset_path" type="string" value = "$(arg dataset_path)"/>
+			
+			<!-- modelnet_dataset 0 = FLASE, 1 = TRUE-->
+			<arg name="modelnet_dataset" default="1" /> 
+			<param name="/perception/modelnet_dataset" type="bool" value = "$(arg modelnet_dataset)"/>
+
+
+		<!-- **********************************************  -->
+		<!-- 	set deep_learning_service and base_network parameters    -->
+		<!-- **********************************************  -->
+
+			<arg name="deep_learning_service" default="/RGBD_multiview_service" />
+			<param name="/perception/deep_learning_service" type="string" value = "$(arg deep_learning_service)"/>
+
+			<!-- The following base_networks have been implemeneted and can be used: 
+				"vgg16_fc1", "vgg16_fc2", "vgg19_fc1", "vgg19_fc2", "xception", "resnet50", "mobileNet",  "mobileNetV2", 
+				"denseNet121", "denseNet169", "densenet201", "nasnetLarge", "/nasnetMobile", "inception",  "inceptionResnet" --> 
+			
+			<arg name="base_network" default="mobileNetV2" />
+			<param name="/perception/base_network" type="string" value = "$(arg base_network)"/>
+
+
+			<!-- set the image resolution -->
+			<arg name="orthographic_image_resolution" default="150" />
+			<param name="/perception/orthographic_image_resolution" type="int" value = "$(arg orthographic_image_resolution)"/>
+			
+			<!-- max_pooling use "MAX", for average pooling use "AVG", use "APP" for appending-->
+			<arg name="pooling_function" default="MAX" /> 
+			<param name="/perception/pooling_function" type="string" value = "$(arg pooling_function)"/>
+
+
+		<!-- ****************************************  -->
+		<!--       		distance functions		       -->
+		<!-- ****************************************  -->
+		
+			<!-- possible options are : chiSquared, kLDivergance, motyka,  divergence,  euclidean, intersection, manhattan,
+			cosine, dice, bhattacharyya, sorensen, canberra, pearson, neyman, gower -->
+			<arg name="distance_function" default="chiSquared" />
+			<param name="/perception/distance_function" type="string" value = "$(arg distance_function)"/>
+
+		
+		<!-- ****************************************  -->
+		<!--       		KNN parameters 			       -->
+		<!-- ****************************************  -->
+			
+			<!-- K param for KNN -->
+			<arg name="K_for_KNN" default="1" />
+			<param name="/perception/K_for_KNN" type="int" value = "$(arg K_for_KNN)"/>
+
+
+		<!-- ****************************************  -->
+		<!--       running_a_bunch_of_experiments 	   -->
+		<!-- ****************************************  -->
+		
+			<!-- pdb_loaded 0 = FLASE, 1 = TRUE; we do not need to do training when we pass a pdb-->
+			<arg name="pdb_loaded" default="0" /> 
+			<param name="/perception/pdb_loaded" type="bool" value = "$(arg pdb_loaded)"/>
+
+			<!-- running_a_bunch_of_experiments 0 = FLASE, 1 = TRUE; we do not need to do training when we pass a pdb-->
+			<arg name="running_a_bunch_of_experiments" default="0" /> 
+			<param name="/perception/running_a_bunch_of_experiments" type="bool" value = "$(arg running_a_bunch_of_experiments)"/>
+				
+
+		<!-- ________________________________-->
+		<!--|                               |-->
+		<!--|   DO NOT CHANGE THESE PARAMS  |-->
+		<!--|_______________________________|-->
+
+
+		<arg name="recognition_threshold" default="200000000000000" />
+		<param name="/perception/recognition_threshold" type="double" value = "$(arg recognition_threshold)"/>
+
+		<!-- GOOD shape descriptor params -->
+
+		<arg name="global_image_width" default="0.2" />
+		<param name="/perception/global_image_width" type="double" value = "$(arg global_image_width)"/>
+
+		<arg name="adaptive_support_lenght" default="0" />
+		<param name="/perception/adaptive_support_lenght" type="int" value = "$(arg adaptive_support_lenght)"/>
+		
+		<arg name="sign" default="1" />
+		<param name="/perception/sign" type="int" value = "$(arg sign)"/>
+
+		<arg name="off_line_flag" default="0" />
+		<param name="/perception/off_line_flag" type="int" value = "$(arg off_line_flag)"/>
+
+		<!-- Image_normalization 0 = FLASE, 1 = TRUE-->
+		<arg name="image_normalization" default="0" /> 
+		<param name="/perception/image_normalization" type="bool" value = "$(arg image_normalization)"/>
+		
+		<!-- multiviews 0 = FLASE, 1 = TRUE-->
+		<arg name="multiviews" default="1" /> 
+		<param name="/perception/multiviews" type="bool" value = "$(arg multiviews)"/>
+		
+		<!-- DOWNSAMPLING 0 = FLASE, 1 = TRUE-->
+		<arg name="downsampling" default="0" /> 
+		<param name="/perception/downsampling" type="bool" value = "$(arg downsampling)"/>
+		
+		<arg name="downsampling_voxel_size" default="0.01" />
+		<param name="/perception/downsampling_voxel_size" type="double" value = "$(arg downsampling_voxel_size)"/>
+		
+						
+		<!-- ________________________________________-->
+		<!--|                                       |-->
+		<!--|   kfold_cross_validation_evaluation   |-->
+		<!--|_______________________________________|-->
+            
+	    <include file="$(find rug_kfold_cross_validation)/launch/bringup_deep_learning_RGBD_descriptor.launch">
+            <arg name="use_nodelets" value="$(arg use_nodelets)" />
+            <arg name="name" value="cross_validation" />
+	    </include>		
+	
+
+	</group>
+	
+    </group>
+
+</launch>
+
+

@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<!--Launches a race_fleave_one_out_evaluation node(let). Remaps all parameters.-->
+<launch>
+<arg name="use_nodelets" default="0"/> <!-- this flag will configure a nodes or nodelets based system-->
+<arg name="name" default="race_kfold_cross_validation_evaluation"/>
+<arg name="nodelet_manager_name" default="nodelet_manager"/>
+<arg name="namespace" default="/perception/pipeline_default"/>
+<!--<arg name="point_cloud_in_topic" default="/camera/depth_registered/points"/>-->
+
+
+	<group ns="$(arg namespace)">
+		<group if="$(arg use_nodelets)"> <!-- with nodelets -->
+			<node pkg="nodelet" type="nodelet" name="$(arg name)" args="load k_fold_cross_validation_hand_crafted_descriptors $(arg nodelet_manager_name)" output="screen">
+			</node>
+		</group>
+
+		<group unless="$(arg use_nodelets)"> <!-- with nodes -->
+			 <node pkg="rug_kfold_cross_validation" type="k_fold_cross_validation_hand_crafted_descriptors" name="$(arg name)" output="screen" required="true">
+			 <!--	<rosparam command="load" file="$(find feature_extraction)/params/default_params.yaml" /> -->
+			</node>
+		</group>
+	</group>
+</launch>
