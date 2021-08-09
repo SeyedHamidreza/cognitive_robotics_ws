@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<!--Launches a race_deep_learning_feature_extraction node(let). Remaps all parameters.-->
+<launch>
+	<arg name="name" default="multi_view_xception_service_max_pooling"/>
+	<node pkg="race_deep_learning_feature_extraction" type="multi_view_xception_service_max_pooling.py" name="$(arg name)" output="screen"> </node>
+</launch>
+

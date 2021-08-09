@@ -1,0 +1,5 @@
+float32[] good_representation
+sensor_msgs/Image RGB_image
+sensor_msgs/Image depth_image
+---
+float32[] deep_representation
