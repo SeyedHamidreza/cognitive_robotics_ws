@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<!-- Launches a node_example node -->
+<launch>
+<arg name="name" default="node_default"/>
+<arg name="test_node" default="test_node"/>
+
+    <node pkg="race_perception_db" type="perception_db_node" name="$(arg name)" output="screen" required="true">
+    	<!--Must use ~ in remappings so they are private-->
+    	<!--param loading-->
+    	<rosparam command="load" file="$(find race_perception_db)/params/default_params.yaml" />
+    </node>
+
+    <node pkg="race_perception_db" type="print_trackid_number" name="$(arg test_node)" output="screen" required="true">
+    	<rosparam command="load" file="$(find race_perception_db)/params/default_params.yaml" />
+    </node>
+
+</launch>	

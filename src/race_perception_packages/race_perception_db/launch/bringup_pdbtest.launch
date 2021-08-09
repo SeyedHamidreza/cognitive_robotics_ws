@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<!-- This is a launch file for an example on how to bringup of the race perception architecture-->
+<launch>
+<!-- this flag will configure the system to run with nodes or nodelets-->
+<arg name="use_nodelets" default="0"/>
+
+<!--  -->
+<arg name="use_pdb" default="0"/>
+<arg name="pdb_source" default="default_pdb"/>
+
+	<group ns="/perception">
+		
+		<!-- _________________________________-->
+		<!--|                                 |-->
+		<!--|             Memory 		      |-->
+		<!--|_________________________________|-->
+
+
+	    <!--Launches a race_perception_db node(let) -->
+	    <group if="$(arg use_pdb)"> <!-- with pr2 -->
+            <node pkg="race_perception_utils" type="pdb_source.sh" name="pdb_source" output="screen" required="false" args="$(find race_perception_db)/pdb/$(arg pdb_source)" />
+        </group>
+
+	    <include file="$(find race_perception_db)/launch/bringup.launch">
+			<!--<arg name="pdb_path" value="$(arg pdb_path)" />-->
+			<arg name="use_nodelets" value="$(arg use_nodelets)" />
+			<arg name="pdb_source" value="$(arg pdb_source)" />
+			<arg name="name" value="perception_db" />
+		</include>
+
+		<!--Launches a cycledebug utility node -->
+        <include file="$(find race_perception_bringup)/launch/cycle_pdb.launch">
+        </include>
+
+
+	</group>
+</launch>

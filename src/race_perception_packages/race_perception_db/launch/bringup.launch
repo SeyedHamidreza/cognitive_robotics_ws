@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<!--Launches a race_perception_db node(let). Remaps all parameters.-->
+<launch>
+<arg name="use_nodelets" default="0"/> <!-- this flag will configure a nodes or nodelets based system-->
+<arg name="name" default="perception_db_default"/>
+<arg name="nodelet_manager_name" default="nodelet_manager"/>
+<arg name="point_cloud_in_topic" default="/camera/depth_registered/points"/>
+<arg name="pdb_source" default="default_pdb"/>
+
+	<group if="$(arg use_nodelets)"> <!-- with nodelets -->
+		<node pkg="nodelet" type="nodelet" name="$(arg name)" args="load race_perception_db/PerceptionDBNodelet $(arg nodelet_manager_name)" output="screen">
+			<!--param loading-->
+			<!-- <param name="db_path" value="0.3"/> -->
+            <param name="~pdb_source" type="string" value="$(arg pdb_source)" />
+			<rosparam command="load" file="$(find race_perception_db)/params/default_params.yaml" />
+		</node>
+	</group>
+
+	<group unless="$(arg use_nodelets)"> <!-- with nodes -->
+	    <node pkg="race_perception_db" type="perception_db_node" name="$(arg name)" output="screen" required="true">
+			<!--Must use ~ in remappings so they are private-->
+			<!--param loading-->
+            <param name="~pdb_source" type="string" value="$(arg pdb_source)" />
+			<rosparam command="load" file="$(find race_perception_db)/params/default_params.yaml" />
+		</node>
+	</group>
+</launch>

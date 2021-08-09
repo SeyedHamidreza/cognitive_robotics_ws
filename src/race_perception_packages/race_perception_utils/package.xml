@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<package>
+	<name>race_perception_utils</name>
+	<version>0.10.0</version>
+	<description>race_perception_utils</description>
+	<author email="kasaei.hamidreza@gmail.com">hamidreza</author>
+	<maintainer email="kasaei.hamidreza@gmail.com">hamidreza</maintainer>
+
+	<license>BSD</license>  
+	<url type="website">https://hkasaei.github.io/</url>
+
+	<buildtool_depend>catkin</buildtool_depend>
+
+	<build_depend>message_generation</build_depend>
+	<build_depend>actionlib_msgs</build_depend>
+	<build_depend>actionlib</build_depend>
+	<build_depend>tf2_eigen</build_depend>
+	<build_depend>tf2_ros</build_depend>
+	<build_depend>roscpp</build_depend>
+	<build_depend>tf</build_depend>
+	<build_depend>nodelet</build_depend>
+	<build_depend>sensor_msgs</build_depend>
+	<build_depend>geometry_msgs</build_depend>
+	<build_depend>std_msgs</build_depend>
+	<build_depend>pcl_conversions</build_depend>
+	<build_depend>race_perception_msgs</build_depend>
+	<build_depend>bondcpp</build_depend>
+
+
+	<run_depend>nodelet</run_depend>
+	<run_depend>tf</run_depend>
+	<run_depend>tf2_eigen</run_depend>
+	<run_depend>tf2_ros</run_depend>
+	<run_depend>roscpp</run_depend>
+	<run_depend>message_runtime</run_depend>
+	<run_depend>actionlib_msgs</run_depend>
+	<run_depend>actionlib</run_depend>
+	<run_depend>sensor_msgs</run_depend>
+	<run_depend>geometry_msgs</run_depend>
+	<run_depend>std_msgs</run_depend>
+	<run_depend>pcl_conversions</run_depend>
+	<run_depend>bondcpp</run_depend>
+
+	<run_depend>race_perception_msgs</run_depend>
+	<export>
+		<cpp cflags="-I${prefix}/include " lflags="-L${prefix}/lib -lgvplugin_xgtk -lrace_perception_utils_print" />
+	</export>
+
+</package>
+

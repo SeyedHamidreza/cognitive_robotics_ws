@@ -1,0 +1,4 @@
+string name
+string id_name
+---
+uint32 nid

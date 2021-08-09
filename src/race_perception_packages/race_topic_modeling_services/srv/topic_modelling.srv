@@ -1,0 +1,6 @@
+float32[] bag_of_words_representation
+string ground_truth_label  #ground truth catgeory label
+bool teach_data
+---
+float32[] topic_representation #topic representation 
+string recognition_result  #recognition result (category_label)
