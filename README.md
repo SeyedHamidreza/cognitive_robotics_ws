@@ -14,6 +14,7 @@ We break this assignment down into two parts:
 
 <p align="center">
   <img src="images/simulated_user.jpg" width="300" title="">
-  
+</p>
+<p align="center">
   Abstract architecture for interaction between the simulated teacher and the learning agent
 </p>
