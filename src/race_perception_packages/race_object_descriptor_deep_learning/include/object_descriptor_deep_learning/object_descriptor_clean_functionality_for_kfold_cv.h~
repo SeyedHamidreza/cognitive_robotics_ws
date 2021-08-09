@@ -1,0 +1,3682 @@
+#ifndef _OBJECT_DESCRIPTOR_H_
+#define _OBJECT_DESCRIPTOR_H_
+
+
+//roslaunch race_feature_extraction test_pdbnodelet_node.launch
+//Emulate race_object_tracking by : "rosrun race_feature_extraction test_feature_extraction"
+
+/* _________________________________
+   |                                 |
+   |           INCLUDES              |
+   |_________________________________| */
+
+//system includes
+#include <stdio.h>
+#include <stdlib.h>
+
+//ROS includes
+#include <ros/ros.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <std_msgs/String.h>
+#include <nodelet/nodelet.h>
+#include <pluginlib/class_list_macros.h>   
+#include <pcl/filters/uniform_sampling.h>
+#include <pcl/visualization/cloud_viewer.h>
+
+//package includes
+#include <object_descriptor/object_descriptor_functionality.h>
+#include <race_perception_msgs/perception_msgs.h>
+#include <race_perception_msgs/CompleteRTOV.h>
+
+//Eigen includes
+#include <Eigen/Core>
+
+//PCL includes
+#include <pcl/io/pcd_io.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/features/normal_3d_omp.h>
+#include <pcl/filters/voxel_grid.h>
+#include <CGAL/Plane_3.h>
+#include <pcl/filters/uniform_sampling.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl/point_types.h>
+#include <pcl/common/common_headers.h>
+
+////new added
+#include <pcl/tracking/kld_adaptive_particle_filter_omp.h>
+#include <pcl/tracking/distance_coherence.h>
+#include <pcl/tracking/hsv_color_coherence.h>
+#include <pcl/tracking/approx_nearest_pair_point_cloud_coherence.h>
+#include <pcl/tracking/nearest_pair_point_cloud_coherence.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl/common/centroid.h>
+#include <pcl/common/pca.h>
+#include <pcl/filters/passthrough.h>
+#include <pcl/filters/project_inliers.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/common/transforms.h>
+#include <pcl/filters/conditional_removal.h>
+#include <pcl/io/pcd_io.h>
+//new includes from preprocessing
+//ROS includes
+#include <ros/ros.h>
+//#include "pcl_ros/impl/transforms.hpp"
+#include <pcl/conversions.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <pcl/filters/conditional_removal.h>
+#include <pcl/sample_consensus/ransac.h>
+#include <pcl/sample_consensus/sac_model_plane.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/ModelCoefficients.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/kdtree/kdtree.h>
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/sample_consensus/model_types.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/segmentation/extract_clusters.h>
+#include <pcl/filters/project_inliers.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/surface/convex_hull.h>
+#include <pcl/segmentation/extract_polygonal_prism_data.h>
+//#include <pcl/common/impl/transforms.hpp>
+#include <pcl/common/transforms.h>
+#include <tf/transform_broadcaster.h>
+#include <tf/transform_listener.h>
+#include <tf_conversions/tf_eigen.h>
+//#include "/opt/ros/fuerte/stacks/geometry/tf_conversions/include/tf_conversions/tf_eigen.h"
+#include <visualization_msgs/Marker.h>
+#include <pcl/segmentation/conditional_euclidean_clustering.h>
+
+#include <visualization_msgs/Marker.h>
+#include <visualization_msgs/MarkerArray.h>
+//#include <../calvin_robot/katana_driver/kni/KNI_4.3.0/lib/kinematics/roboop/newmat/newmat.h>
+//#include <../calvin_robot/katana_driver/kni/KNI_4.3.0/lib/kinematics/roboop/newmat/newmat.h>
+#include <race_perception_utils/print.h>
+#include <pcl_conversions/pcl_conversions.h>
+
+
+//raceua includes
+#include <race_perception_db/perception_db.h>
+#include <race_perception_db/perception_db_serializer.h>
+#include <race_perception_db/MsgTest.h>
+#include <race_perception_utils/cycle.h>
+#include <race_perception_utils/print.h>
+
+#include <race_perception_msgs/TOVI.h>
+
+#include <colormap_utils/colormap_utils.h>
+
+
+/* _________________________________
+   |                                 |
+   |        Class definition         |
+   |_________________________________| */
+
+namespace ros {class Publisher;}
+
+/* _________________________________
+   |                                 |
+   |            NameSpace            |
+   |_________________________________| */
+
+using namespace std;
+using namespace pcl;
+using namespace ros;
+using namespace race_perception_db;
+using namespace race_perception_msgs;
+using namespace race_perception_utils;
+using namespace tf;
+
+
+ /* _________________________________
+  |                                 |
+  |        Global Parameters        |
+  |_________________________________| */
+
+    //spin images parameters
+    int    spin_image_width = 8 ;
+    double spin_image_support_lenght = 0.1;
+    int    subsample_spinimages = 10;
+    double uniform_sampling_size = 0.06;
+
+    int  off_line_flag  = 1;
+    int  number_of_bins = 10;
+    int  adaptive_support_lenght = 1;
+    double global_image_width =0.5;
+/* _________________________________
+   |                                 |
+   |        GLOBAL VARIABLES         |
+   |_________________________________| */
+            
+//typedef pcl::PointXYZRGB PointT;
+typedef PointCloud<PointT> PointCloudT;
+typedef boost::shared_ptr<PointCloudT> PointCloudPtrT;
+
+
+
+  
+	    bool signDisambiguationFlag = false;
+	    int sign = 1;
+	    int threshold = 10;	 
+boost::shared_ptr<tf::TransformListener> _p_transform_listener;
+
+
+PointCloudPtrT cloud_reference;
+PointCloudPtrT initial_cloud_ref;
+
+boost::shared_ptr<TransformBroadcaster> _br; //a transform broadcaster
+
+
+int compute_bounding_box_dimensions(boost::shared_ptr<PointCloud<PointT> > pc, geometry_msgs::Vector3& dimensions)
+{
+	PointT minimum_pt;
+	PointT maximum_pt;
+
+	getMinMax3D(*pc, minimum_pt, maximum_pt); // min max for bounding box
+	dimensions.x = (maximum_pt.x - minimum_pt.x); 
+	dimensions.y = (maximum_pt.y - minimum_pt.y); 
+	dimensions.z = (maximum_pt.z - minimum_pt.z); 
+	
+	return 1;
+}
+
+
+template <typename T>
+int project_pc_to_plane(boost::shared_ptr<pcl::PointCloud<T> > pc_in, boost::shared_ptr<pcl::ModelCoefficients> coefficients, boost::shared_ptr<pcl::PointCloud<T> > pc_out)
+{
+	//Create the projection object
+	pcl::ProjectInliers<T> projection;
+	projection.setModelType(pcl::SACMODEL_NORMAL_PLANE); //set model type
+	projection.setInputCloud(pc_in);
+	projection.setModelCoefficients(coefficients);
+	projection.filter(*pc_out);
+
+	return 1;
+}
+
+void print_tf_transform(tf::Transform* tf, std::string s)
+{
+	std::ostringstream ss;
+
+	//s.append("fixed_frame_id=" + tf->frame_id_ + " frame_id="+ tf->child_frame_id_);
+
+	btQuaternion q(tf->getRotation().x(),tf->getRotation().y(),tf->getRotation().z(),tf->getRotation().w());
+	double roll, pitch, yaw;
+	tf::Matrix3x3(q).getRPY(roll, pitch, yaw);
+	ROS_INFO("(roll, pitch, yaw) = (%f, %f, %f)",roll, pitch, yaw);
+
+
+	ss << std::fixed << std::setprecision(5) << tf->getOrigin().x();
+	s.append("\nOrigin x=" + ss.str());
+	ss.str("");
+
+	ss << std::fixed << std::setprecision(5) << tf->getOrigin().y();
+	s.append(" y=" + ss.str());
+	ss.str("");
+
+	ss << std::fixed << std::setprecision(5) << tf->getOrigin().z();
+	s.append(" z=" + ss.str());
+	ss.str("");
+
+	ss << std::fixed << std::setprecision(5) << tf->getRotation().x();
+	s.append("\nRotation x=" + ss.str());
+	ss.str("");
+
+	ss << std::fixed << std::setprecision(5) << tf->getRotation().y();
+	s.append(" y=" + ss.str());
+	ss.str("");
+
+	ss << std::fixed << std::setprecision(5) << tf->getRotation().z();
+	s.append(" z=" + ss.str());
+	ss.str("");
+
+	ss << std::fixed << std::setprecision(5) << tf->getRotation().w();
+	s.append(" w=" + ss.str());
+	ss.str("");
+
+	ROS_INFO("%s",s.c_str());
+}
+
+template <typename T>
+void printObjectViewHistograms ( vector < vector <T> > object_view_histograms)
+{
+
+  ROS_INFO("\t\t[-]- given object_view_histograms has %ld histogram:",object_view_histograms.size());
+  for (size_t i = 0; i < object_view_histograms.size(); i++) 
+    {
+	printf("Plane %ld = [", i);
+	for (size_t j = 0; j < object_view_histograms.at( i ).size(); j++) 
+	{
+		printf("%d; ", object_view_histograms.at( i ).at( j ));
+	}
+	printf("]\n");
+    }
+}
+
+template <typename T>
+void printHistogram ( vector <T>  histogram, string plane_name)
+{
+
+  ROS_INFO("\t\t[-]- given histograms has %ld bins:",histogram.size());
+  printf("\nPlane %s = [", plane_name.c_str());
+  for (size_t i = 0; i < histogram.size(); i++) 
+  {
+    cout<< histogram.at(i)<<", " ;
+  }
+  printf("]\n");
+  
+}
+
+void convert2DhistogramTo1Dhisftogram(vector <vector <int> >  _2DHistogram, vector <int>  &histogram)
+{
+  
+  ROS_INFO("\t\t[-]- given 2D histograms has [%ld,%ld] dimensions.", _2DHistogram.size(), _2DHistogram.at(0).size());
+  
+  for (int i=0 ; i < _2DHistogram.size(); i++)
+  {
+   
+    for (int j=0; j < _2DHistogram.at(i).size(); j++)
+    {
+      //ROS_INFO("\n _2DHistogram.at(i).at(j)= %d", _2DHistogram.at(i).at(j) );
+      histogram.push_back(_2DHistogram.at(i).at(j));
+    }
+  }
+  
+}
+
+
+	    template <typename T>
+	    int XYsignDisambiguation(boost::shared_ptr<pcl::PointCloud<T> >  XOY_projected_view,
+				    int threshold, int &sign )
+	    {
+	    
+		int Xpositive =0; 
+		int Xnegative =0; 
+
+		int Ypositive =0; 
+		int Ynegative =0; 
+
+		//XOY page
+		for (int i=0; i< XOY_projected_view -> points.size(); i++)
+		{
+		      
+			if (XOY_projected_view->points.at(i).x >0.015)
+			{
+			    Xpositive ++;
+			}
+			else if (XOY_projected_view->points.at(i).x < - 0.015)
+			{
+			    Xnegative ++;
+			}
+			
+			if (XOY_projected_view->points.at(i).y >0.015)
+			{
+			    //Ypositive ++;
+			    Xpositive ++;
+			}
+			else if (XOY_projected_view->points.at(i).y < -0.015)
+			{
+			    //Ynegative ++;
+			    Xnegative ++;
+			}
+		}
+		
+		
+		if ((Xpositive < Xnegative) and (Xnegative - Xpositive > threshold))
+		{
+		    sign = -1;
+		    ROS_INFO("axes directions must be filiped -> Xpositive = %d , Xnegative = %d, diffrence is = %d", Xpositive, Xnegative, abs(Xpositive - Xnegative));
+
+		}
+		else 
+		{
+		    sign = 1;
+		    ROS_INFO("axes directions are correctly defined->  Xpositive = %d , Xnegative = %d, diffrence is = %d", Xpositive, Xnegative, abs(Xpositive - Xnegative));
+		}
+		
+		if ((Ypositive < Ynegative) and (Ynegative - Ypositive > threshold))
+		{
+		    sign = -1;
+		    ROS_INFO("directions must be filiped -> diffrence is = %d", abs(Xpositive - Xnegative));
+
+		}
+		else 
+		{
+		    sign = 1;
+		    ROS_INFO("directions are correctly defined-> diffrence is = %d", abs(Xpositive - Xnegative));
+		}	
+		return 0;
+	    }
+	    
+	    template <typename T>
+	    int XsignDisambiguation(boost::shared_ptr<pcl::PointCloud<T> >  XoZ_projected_view,
+				    int threshold, int &sign )
+	    {
+	    
+		int Xpositive =0; 
+		int Xnegative =0; 
+
+		//XoZ page
+		for (int i=0; i< XoZ_projected_view -> points.size(); i++)
+		{
+		      
+			if (XoZ_projected_view->points.at(i).x >0.015)
+			{
+			    Xpositive ++;
+			}
+			else if (XoZ_projected_view->points.at(i).x < - 0.015)
+			{
+			    Xnegative ++;
+			}
+// 			else//debug
+// 			{
+// 			  ROS_INFO(" X = %f", XoZ_projected_view->points.at(i).x );
+// 			}
+			
+		}
+		
+		if ((Xpositive < Xnegative) and (Xnegative - Xpositive >= threshold))
+		{
+		    sign = -1;
+		    ROS_INFO("Direction of X axis must be filiped -> Xpositive = %d , Xnegative = %d, diffrence is = %d", Xpositive, Xnegative, abs(Xpositive - Xnegative));
+
+		}
+		else 
+		{
+		    sign = 1;
+		    ROS_INFO("Direction of X axis is correctly defined->  Xpositive = %d , Xnegative = %d, diffrence is = %d", Xpositive, Xnegative, abs(Xpositive - Xnegative));
+		}
+				
+		return 0;
+	    }
+	    
+
+	    template <typename T>
+	    int YsignDisambiguation(boost::shared_ptr<pcl::PointCloud<T> >  YoZ_projected_view,
+				    int threshold, int &sign )
+	    {
+	    
+		int Ypositive =0; 
+		int Ynegative =0; 
+
+		//YoZ page
+		for (int i=0; i< YoZ_projected_view -> points.size(); i++)
+		{
+		      
+			if (YoZ_projected_view->points.at(i).y >0.015)
+			{
+			    Ypositive ++;
+			}
+			else if (YoZ_projected_view->points.at(i).y < - 0.015)
+			{
+			    Ynegative ++;
+			}
+// 			else//debug
+// 			{
+// 			  ROS_INFO(" Y = %f", YoZ_projected_view->points.at(i).y );
+// 			}
+		}
+		
+		if ((Ypositive < Ynegative) and (Ynegative - Ypositive >= threshold))
+		{
+		    sign = -1;
+		    ROS_INFO("Direction of Y axis must be filiped -> Ypositive = %d , Ynegative = %d, diffrence is = %d", Ypositive, Ynegative, abs(Ypositive - Ynegative));
+
+		}
+		else 
+		{
+		    sign = 1;
+		    ROS_INFO("Direction of Y axis is correctly defined->  Ypositive = %d , Ynegative = %d, diffrence is = %d", Ypositive, Ynegative, abs(Ypositive - Ynegative));
+		}
+				
+		return 0;
+	    }
+	    	
+	    	    
+	    	    
+	    template <typename T>
+	    int YOZ2DObjectHistogram( boost::shared_ptr<pcl::PointCloud<T> >  YOZ_projected_view,
+				     double largest_side, 
+			             int number_of_bins, 
+				     int sign,
+				     vector < vector<int> > &YOZ_histogram)
+	    
+	    {
+
+	        ROS_INFO("number_of_bins = %d , sign = %d", number_of_bins, sign);
+
+		for (int i =0; i < number_of_bins; i++)
+		{
+		    vector<int> row;
+		    for (int j =0; j < number_of_bins; j++)
+		    {		
+			row.push_back(0);
+		    }
+		    YOZ_histogram.push_back(row);
+		}
+
+		ROS_INFO("YOZ_histogram has [%d , %d] bins", YOZ_histogram.size(), YOZ_histogram.at(0).size());
+		ROS_INFO("sign = %d",sign);
+
+		double x = largest_side/2; 
+		double y = largest_side/2; 
+		double z = largest_side/2; 
+	        double interval_x = largest_side/number_of_bins; 
+		double interval_y = largest_side/number_of_bins; 
+		double interval_z = largest_side/number_of_bins; 
+		for (int i=0; i < YOZ_projected_view-> points.size(); i++)
+		{
+		      geometry_msgs::Point p;
+		      //p.x = all_projected_views.at(view_i)->points.at(i).x + x;
+		      p.y = sign * YOZ_projected_view->points.at(i).y +  y;
+		      p.z = YOZ_projected_view ->points.at(i).z + z;
+		     
+		      //if adaptive_support_lenght parameter == false, some points might be projected outside of the plane, we must discard them.
+		      if ((trunc(p.y / interval_y) < YOZ_histogram.size()) and (trunc(p.z / interval_z) < YOZ_histogram.at(0).size())
+			    and (trunc(p.y / interval_y) >= 0) and (trunc(p.z / interval_z) >= 0))
+		      {
+			YOZ_histogram.at(trunc(p.y / interval_y)).at(trunc(p.z / interval_z))++;
+		      }
+		      else 
+		      {
+			ROS_INFO("YOZ: P(y).(%i)= %f --- dy= %f, interval_y = %f", i, p.y, y, interval_y );
+			ROS_INFO("YOZ: P(z).(%i)= %f --- dz= %f, interval_z = %f", i, p.z, z, interval_z );
+			ROS_INFO("(trunc(p.y / interval_y)= %f and (trunc(p.z / interval_z) =%f", trunc(p.y / interval_y), trunc(p.z / interval_z));
+		      }
+		  }
+		  return 0;
+	    }
+	    
+	    
+	    template <typename T>
+	    int XOZ2DObjectHistogram( boost::shared_ptr<pcl::PointCloud<T> >  XOZ_projected_view,
+				     double largest_side, 
+			             int number_of_bins,
+				     int sign,
+				     vector < vector<int> > &XOZ_histogram)
+	    
+	    {
+		
+		for (int i =0; i<number_of_bins; i++)
+		{
+		    vector<int> row;
+		    for (int j =0; j< number_of_bins; j++)
+		    {		
+			row.push_back(0);
+		    }
+		    XOZ_histogram.push_back(row);
+		}
+		
+		double x = largest_side/2; 
+		double y = largest_side/2; 
+		double z = largest_side/2; 
+	        double interval_x = largest_side/number_of_bins; 
+		double interval_y = largest_side/number_of_bins; 
+		double interval_z = largest_side/number_of_bins; 
+		for (int i=0; i < XOZ_projected_view-> points.size(); i++)
+		{
+		      geometry_msgs::Point p;
+		      p.x =sign *  XOZ_projected_view->points.at(i).x +  x;
+		      //p.y = XOZ_projected_view->points.at(i).y + y;
+		      p.z = XOZ_projected_view ->points.at(i).z + z;
+		      //ROS_INFO("YOZ: P(x).(%i)= %f --- dx= %f", i, XOZ_projected_view->points.at(i).x, x );
+		      //ROS_INFO("(trunc(p.x / interval_x)= %f and (trunc(p.z / interval_z) =%f", trunc(p.x / interval_x), trunc(p.z / interval_z));
+		      
+		      //if adaptive_support_lenght parameter == false, some points might be projected outside of the plane, we must discard them.
+		      if ((trunc(p.x / interval_x) < XOZ_histogram.size()) and (trunc(p.z / interval_z) < XOZ_histogram.at(0).size())
+			   and (trunc(p.x / interval_x) >=0) and (trunc(p.z / interval_z) >=0))
+		      {
+			  XOZ_histogram.at(trunc(p.x / interval_x)).at(trunc(p.z / interval_z))++;
+		      }
+		      else 
+		      {
+			ROS_INFO("XOZ: P(y).(%i)= %f --- dy= %f, interval_y = %f", i, p.x, x, interval_x );
+			ROS_INFO("XOZ: P(z).(%i)= %f --- dz= %f, interval_z = %f", i, p.z, z, interval_z );
+			ROS_INFO("(trunc(p.x / interval_x)= %f and (trunc(p.z / interval_z) =%f", trunc(p.x / interval_x), trunc(p.z / interval_z));
+		      }
+		  }
+		  return 0;
+	    }
+	    
+	    
+	    template <typename T>
+	    int XOY2DObjectHistogram( boost::shared_ptr<pcl::PointCloud<T> >  XOY_projected_view,
+				     double largest_side, 
+			             int number_of_bins, 
+				     int sign,
+				     vector < vector<int> > &XOY_histogram)
+	    
+	    {
+	      
+	      
+		for (int i =0; i<number_of_bins; i++)
+		{
+		    vector<int> row;
+		    for (int j =0; j< number_of_bins; j++)
+		    {		
+			row.push_back(0);
+		    }
+		    XOY_histogram.push_back(row);
+		}
+		
+		double x = largest_side/2; 
+		double y = largest_side/2; 
+		double z = largest_side/2; 
+	        double interval_x = largest_side/number_of_bins; 
+		double interval_y = largest_side/number_of_bins; 
+		double interval_z = largest_side/number_of_bins; 
+		for (int i=0; i < XOY_projected_view-> points.size(); i++)
+		{
+		      geometry_msgs::Point p;
+		      p.x = sign * XOY_projected_view->points.at(i).x +  x;
+		      p.y = sign * XOY_projected_view->points.at(i).y +  y;
+		      //p.z = XOY_projected_view ->points.at(i).z + z;
+		      //ROS_INFO("YOZ: P(x).(%i)= %f --- dx= %f", i, XOY_projected_view->points.at(i).x, x );
+		      //ROS_INFO("(trunc(p.x / interval_x)= %f and (trunc(p.y / interval_y) =%f", trunc(p.x / interval_x), trunc(p.y / interval_y));
+		      
+		      //if adaptive_support_lenght parameter == false, some points might be projected outside of the plane, we must discard them.
+		      if ((trunc(p.x / interval_x) < XOY_histogram.size()) and (trunc(p.y / interval_y) < XOY_histogram.at(0).size())and 
+			   (trunc(p.x / interval_x) >= 0) and (trunc(p.y / interval_y) >=0))
+		      {
+			  XOY_histogram.at(trunc(p.x / interval_x)).at(trunc(p.y / interval_y))++;
+		      }
+		      else 
+		      {
+			ROS_INFO("XOY: P(x).(%i)= %f --- dx= %f, interval_x = %f", i, p.x, x, interval_x );
+			ROS_INFO("XOY: P(y).(%i)= %f --- dy= %f, interval_y = %f", i, p.y, y, interval_y );
+			ROS_INFO("(trunc(p.x / interval_x)= %f and (trunc(p.z / interval_z) =%f", trunc(p.x / interval_x), trunc(p.y / interval_y));
+		      }
+		  }
+		  return 0;
+	    }
+	    	
+	    	     
+	    int normalizingHistogram(vector <int> histogram, 
+				     vector <float> &normalized_histogram)
+	    {
+	    	//compute sumation of all histogram's bins .
+		int sum_all_bins = 0;    
+		for (size_t i = 0; i < histogram.size(); i++)
+		{
+		  sum_all_bins += histogram.at(i);
+		}
+		ROS_INFO("sum_all_bins = %d ", sum_all_bins);
+		
+		//normalizing histogram.
+		float normalizing_bin = 0;
+		for (size_t i = 0; i < histogram.size(); i++)
+		{
+		    normalizing_bin = 0;
+		    if (sum_all_bins != 0)
+		    {  
+		      normalizing_bin =  histogram.at(i) / float (sum_all_bins);
+		      //cout <<  normalizing_bin << ", ";
+		    }
+		    normalized_histogram.push_back( normalizing_bin);
+		}
+		return 0;
+	    }
+	    
+	    int viewpointEntropy(vector <float> normalized_histogram,
+				float &entropy)
+	    {
+	    	//compute entropy (latex notation) : H(\textbf{m})= -\sum_{i=1}^{n^2} \textbf{m}_i~\log_2 ~\textbf{m}_i
+	    	entropy =0;
+		for (size_t i = 0; i < normalized_histogram.size(); i++)
+		{
+
+		  if (normalized_histogram.at(i) != 0)
+		  {
+		    float entropy_tmp = normalized_histogram.at(i) * log2(normalized_histogram.at(i));
+		    //float entropy_tmp = (normalized_histogram.at(i)/normalized_histogram.size())* log2(normalized_histogram.at(i)/normalized_histogram.size());
+		    entropy = entropy + entropy_tmp;
+		    //ROS_INFO("entropy_tmp = %f", entropy_tmp);
+		  }
+		}
+		entropy = -entropy;
+		ROS_INFO("entropy = %f", entropy);
+
+		return 0;
+	    }
+	    
+	    int viewpointEntropyNotNormalized(vector <int> not_normalized_histogram,
+				float &entropy)
+	    {
+	    
+		//TODO : the name of this fuction should be "viewPointEntropy" and the other one is a just entropy 
+		//compute entropy (latex notation) : H(\textbf{m})= -\sum_{i=1}^{n^2} \textbf{m}_i~\log_2 ~\textbf{m}_i
+	    	entropy =0;
+		for (size_t i = 0; i < not_normalized_histogram.size(); i++)
+		{
+
+		  //if (not_normalized_histogram.at(i) > 0)
+		  if (not_normalized_histogram.at(i) != 0)
+		  {
+		    //float entropy_tmp = not_normalized_histogram.at(i) * log2(not_normalized_histogram.at(i));
+		    float entropy_tmp = float(1/*not_normalized_histogram.at(i)*//float(not_normalized_histogram.size()))
+					     *log2(float(/*not_normalized_histogram.at(i)*/1)/float(not_normalized_histogram.size()));
+		    entropy = entropy + entropy_tmp;
+		    //entropy ++;
+		    //ROS_INFO("entropy_tmp = %f", entropy_tmp);
+		  }
+		}
+		entropy = -entropy;
+		//entropy = entropy/float(not_normalized_histogram.size());
+		ROS_INFO("entropy = %f", entropy);
+
+		return 0;
+	    }
+	    
+	    int findMaxViewPointsEntropy( vector <float> view_point_entropy, 
+					 int &index)
+	    {
+	      index = 0;
+	      for (int i=1; i < view_point_entropy.size(); i++ )
+	      {
+		  if (view_point_entropy.at(i) > view_point_entropy.at(index))
+		  {
+		    index = i;
+		  }
+	      }
+	      
+	      return 0;
+	    }
+	        
+	    int kullbackLiebler ( vector <float>  Ptheta,
+				  vector <float>  Qtheta,
+				  float &similarity )   
+	    { 
+		similarity = 0;
+		float Distance_P_Q =0;
+		float Distance_Q_P =0;
+		
+		for (int i =0; i< Ptheta.size(); i++)
+		{
+		    if ((Ptheta.at(i)!=0) and (Qtheta.at(i) != 0))
+		    {
+			//Distance_P_Q += Ptheta.at(i)*(log2(Ptheta.at(i)/Qtheta.at(i)));
+			Distance_P_Q +=  Ptheta.at(i)*(log2(Ptheta.at(i)/Qtheta.at(i)));
+			Distance_Q_P +=  Qtheta.at(i)* (log2(Qtheta.at(i)/Ptheta.at(i)));
+// // 			Distance_P_Q +=  float(Ptheta.at(i))/float(Ptheta.size()) *(log2(Ptheta.at(i)/Qtheta.at(i)));
+// 			Distance_Q_P +=  float(Qtheta.at(i))/float(Ptheta.size()) * (log2(Qtheta.at(i)/Ptheta.at(i)));
+		    }
+      
+		}	
+		
+		//similarity = pow (Distance_P_Q,2) ;
+		//similarity = Distance_P_Q ;
+		similarity = 0.5 * (Distance_P_Q + Distance_Q_P);
+		ROS_INFO("D(P, Q) = %f", similarity);
+		//likelihood = similarity;
+	      
+	    return 0;
+	    }
+	    
+	    int avrageHistograms( vector< float> histogram1,
+				    vector< float> historam2,
+				    vector< float> historam3,
+				    vector< float> &average)
+	    {
+		for (int i=0; i <histogram1.size(); i++ )
+		{
+		  average.push_back(float(histogram1.at(i)+historam2.at(i)+historam3.at(i))/float(3.00));
+		}
+		return 0;
+	    }
+
+	    
+	    int meanOfHistogram(vector< float> histogram, float &mean)
+	    { 	    
+		// http://www.stat.yale.edu/Courses/1997-98/101/rvmnvar.htm
+		float mu = 0;
+		for (int i = 0; i < histogram.size(); i++)
+		{
+		    mu += (i+1)*histogram.at(i);
+		}
+		mean = mu;
+		return 0;
+	    }
+	    int varianceOfHistogram(vector< float> histogram, float mean, float &variance)
+	    {
+		// http://www.stat.yale.edu/Courses/1997-98/101/rvmnvar.htm
+		float variance_tmp = 0;
+		for (int i = 0; i < histogram.size(); i++)
+		{
+		    variance_tmp += pow((i+1)-mean,2)*histogram.at(i);
+		}
+		variance = variance_tmp;
+		return 0;
+	    }
+	    int subtractTowHistogram(vector< float> histogram1,
+				    vector< float> historam2,
+				    vector< float> &subtract)
+	    {
+	      
+		for (int i=0; i <histogram1.size(); i++ )
+		{
+		  if (histogram1.at(i) > historam2.at(i))
+		  {
+		      subtract.push_back(histogram1.at(i)-historam2.at(i));
+		  }
+		  else
+		  {
+		       subtract.push_back(0);
+		  }
+		}
+		
+		return 0;
+	    }
+	    int objectViewHistogram( int maximum_entropy_index,
+				    vector <float> view_point_entropy,
+				    vector< vector<float> >normalized_projected_views,
+				    vector< float> &sorted_normalized_projected_views,
+				    string &std_name_of_sorted_projected_plane /*debug*/
+ 				  )
+	    {
+	       float disTmp1 = 0;
+	       float disTmp2 = 0;
+	       
+	       float disTmpAvg1 = 0;
+	       float disTmpAvg2 = 0;
+	       
+	       float disTmpRef1 = 0;
+	       float disTmpRef2 = 0;
+	      
+	       float disTmpEnt1 = 0;
+	       float disTmpEnt2 = 0;
+	       float wRef=50, wAvg=25; 
+	       
+	       float variance1 = 0;
+	       float variance2 = 0;
+	       float mean =0;
+	       std::setprecision(3);
+	       vector <float> subtract0;
+	       vector <float> subtract1;
+	       vector <float> subtract2;
+	       vector <float> average;
+
+	      sorted_normalized_projected_views.insert ( sorted_normalized_projected_views.end(), 
+						        normalized_projected_views.at(maximum_entropy_index).begin(), 
+							normalized_projected_views.at(maximum_entropy_index).end());    
+
+	      avrageHistograms(normalized_projected_views.at(0),normalized_projected_views.at(1),normalized_projected_views.at(2),average);
+	      subtractTowHistogram(normalized_projected_views.at(0),average, subtract0); 
+	      subtractTowHistogram(normalized_projected_views.at(1),average, subtract1);
+	      subtractTowHistogram(normalized_projected_views.at(2),average, subtract2); 
+		
+	      switch (maximum_entropy_index)
+	      {
+		case 0 :
+		  
+		  std_name_of_sorted_projected_plane += "YoZ - ";
+// 		  kullbackLiebler(normalized_projected_views.at(maximum_entropy_index),normalized_projected_views.at(1), disTmp1);
+// 		  kullbackLiebler(normalized_projected_views.at(maximum_entropy_index),normalized_projected_views.at(2), disTmp2);
+// 		 
+		  
+// 		  kullbackLiebler(subtract0,subtract1, disTmpRef1);
+// 		  kullbackLiebler(subtract0,subtract2, disTmpRef2);
+// // 		  
+// 		  kullbackLiebler(average,subtract1, disTmpAvg1);
+// 		  kullbackLiebler(average,subtract2, disTmpAvg2);
+// 		  		  
+// 		  disTmpEnt1= view_point_entropy.at(1);
+// 		  disTmpEnt2=view_point_entropy.at(2);
+// 		  disTmp1 = (wAvg*disTmpAvg1 + wRef*disTmpRef1 + disTmpEnt1);
+// 		  disTmp2 = (wAvg*disTmpAvg2 + wRef*disTmpRef2 + disTmpEnt2);
+		  
+		  meanOfHistogram(normalized_projected_views.at(1), mean);
+		  varianceOfHistogram(normalized_projected_views.at(1), mean, variance1);
+		  meanOfHistogram(normalized_projected_views.at(2), mean);
+		  varianceOfHistogram(normalized_projected_views.at(2), mean, variance2);
+		  disTmp1=variance1;
+		  disTmp2=variance2;
+		  
+		  if (disTmp1 <= disTmp2)
+		  {
+		    std_name_of_sorted_projected_plane += "XoZ (" + boost::lexical_cast<std::string>(disTmp1)+ 
+							") - XoY ("+ boost::lexical_cast<std::string>(disTmp2)+ ")";
+		    sorted_normalized_projected_views.insert ( sorted_normalized_projected_views.end(), 
+							      normalized_projected_views.at(1).begin(),
+							      normalized_projected_views.at(1).end());
+		    
+		    sorted_normalized_projected_views.insert ( sorted_normalized_projected_views.end(), 
+							      normalized_projected_views.at(2).begin(),
+							      normalized_projected_views.at(2).end());
+		  }
+		  else
+		  {		     
+		    std_name_of_sorted_projected_plane += "XoY (" + boost::lexical_cast<std::string>(disTmp2)+ 
+							") - XoZ ("+ boost::lexical_cast<std::string>(disTmp1)+ ")";
+		    sorted_normalized_projected_views.insert ( sorted_normalized_projected_views.end(), 
+							      normalized_projected_views.at(2).begin(),
+							      normalized_projected_views.at(2).end());
+		    sorted_normalized_projected_views.insert ( sorted_normalized_projected_views.end(), 
+							      normalized_projected_views.at(1).begin(),
+							      normalized_projected_views.at(1).end());
+		  }
+		  break;
+		  
+		case 1 :
+		  std_name_of_sorted_projected_plane += "XoZ - ";
+// 		  kullbackLiebler(normalized_projected_views.at(maximum_entropy_index),normalized_projected_views.at(0), disTmp1);
+// 		  kullbackLiebler(normalized_projected_views.at(maximum_entropy_index),normalized_projected_views.at(2), disTmp2);
+// 		  
+// 		  avrageTwoHistogram(normalized_projected_views.at(0),normalized_projected_views.at(2),average);
+// 		  subtractTowHistogram(normalized_projected_views.at(0),average, subtract1);
+// 		  subtractTowHistogram(normalized_projected_views.at(2),average, subtract2); 
+		  
+// 		  kullbackLiebler(subtract1,subtract0, disTmpRef1);
+// 		  kullbackLiebler(subtract1,subtract2, disTmpRef2);
+// 		  		  
+// 		  kullbackLiebler(average,subtract0, disTmpAvg1);
+// 		  kullbackLiebler(average,subtract2, disTmpAvg2);
+// 		  
+// 		  disTmpEnt1= view_point_entropy.at(0);
+// 		  disTmpEnt2=view_point_entropy.at(2);
+// 		  disTmp1 = (wAvg*disTmpAvg1 + wRef*disTmpRef1 + disTmpEnt1);
+// 		  disTmp2 = (wAvg*disTmpAvg2 + wRef*disTmpRef2 + disTmpEnt2);
+		  
+		  meanOfHistogram(normalized_projected_views.at(0), mean);
+		  varianceOfHistogram(normalized_projected_views.at(0), mean, variance1);
+		  meanOfHistogram(normalized_projected_views.at(1), mean);
+		  varianceOfHistogram(normalized_projected_views.at(1), mean, variance2);
+		  disTmp1=variance1;
+		  disTmp2=variance2;
+		  
+		  
+		  if (disTmp1 <= disTmp2)
+		  {
+		    std_name_of_sorted_projected_plane += "YoZ (" + boost::lexical_cast<std::string>(disTmp1)+ 
+							") - XoY ("+ boost::lexical_cast<std::string>(disTmp2)+ ")";
+		    sorted_normalized_projected_views.insert ( sorted_normalized_projected_views.end(), 
+							      normalized_projected_views.at(0).begin(),
+							      normalized_projected_views.at(0).end());
+		    sorted_normalized_projected_views.insert ( sorted_normalized_projected_views.end(), 
+							      normalized_projected_views.at(2).begin(),
+							      normalized_projected_views.at(2).end());
+		  }
+		  else
+		  {
+		     std_name_of_sorted_projected_plane += "XoY (" + boost::lexical_cast<std::string>(disTmp2)+ 
+							") - YoZ ("+ boost::lexical_cast<std::string>(disTmp1)+ ")";
+		    sorted_normalized_projected_views.insert ( sorted_normalized_projected_views.end(), 
+							      normalized_projected_views.at(2).begin(),
+							      normalized_projected_views.at(2).end());
+		    sorted_normalized_projected_views.insert ( sorted_normalized_projected_views.end(), 
+							      normalized_projected_views.at(0).begin(),
+							      normalized_projected_views.at(0).end());
+		  }
+		  break;
+		    
+		case 2 :
+		  std_name_of_sorted_projected_plane += "XoY - ";
+// 		  kullbackLiebler(normalized_projected_views.at(maximum_entropy_index),normalized_projected_views.at(0), disTmp1);
+// 		  kullbackLiebler(normalized_projected_views.at(maximum_entropy_index),normalized_projected_views.at(1), disTmp2);
+// 		  
+// 		  avrageTwoHistogram(normalized_projected_views.at(0),normalized_projected_views.at(1),average);
+// 		  subtractTowHistogram(normalized_projected_views.at(0),average, subtract1);
+// 		  subtractTowHistogram(normalized_projected_views.at(1),average, subtract2); 
+// 		  
+// 		  kullbackLiebler(subtract2,subtract0, disTmpRef1);
+// 		  kullbackLiebler(subtract2,subtract1, disTmpRef2);
+// // 		  
+// 		  
+// 		  kullbackLiebler(average,subtract0, disTmp1);
+// 		  kullbackLiebler(average,subtract1, disTmp2);
+// 		  
+// 		  disTmpEnt1= view_point_entropy.at(0);
+// 		  disTmpEnt2=view_point_entropy.at(1);
+// 		  disTmp1 = (wAvg*disTmpAvg1 + wRef*disTmpRef1 + disTmpEnt1);
+// 		  disTmp2 = (wAvg*disTmpAvg2 + wRef*disTmpRef2 + disTmpEnt2);
+		  
+		  		  
+		  meanOfHistogram(normalized_projected_views.at(0), mean);
+		  varianceOfHistogram(normalized_projected_views.at(0), mean, variance1);
+		  meanOfHistogram(normalized_projected_views.at(1), mean);
+		  varianceOfHistogram(normalized_projected_views.at(1), mean, variance2);
+		  disTmp1=variance1;
+		  disTmp2=variance2;
+		  
+		  
+		  if (disTmp1 <= disTmp2)
+		  {
+		     std_name_of_sorted_projected_plane += "YoZ (" + boost::lexical_cast<std::string>(disTmp1)+ 
+							") - XoZ ("+ boost::lexical_cast<std::string>(disTmp2)+ ")";
+		    sorted_normalized_projected_views.insert ( sorted_normalized_projected_views.end(), 
+							      normalized_projected_views.at(0).begin(),
+							      normalized_projected_views.at(0).end());
+		    sorted_normalized_projected_views.insert ( sorted_normalized_projected_views.end(), 
+							      normalized_projected_views.at(1).begin(),
+							      normalized_projected_views.at(1).end());
+		  }
+		  else
+		  {
+		     std_name_of_sorted_projected_plane += "XoZ (" + boost::lexical_cast<std::string>(disTmp1)+ 
+							") - YoZ ("+ boost::lexical_cast<std::string>(disTmp2)+ ")";
+		    sorted_normalized_projected_views.insert ( sorted_normalized_projected_views.end(), 
+							      normalized_projected_views.at(1).begin(),
+							      normalized_projected_views.at(1).end());
+		    sorted_normalized_projected_views.insert ( sorted_normalized_projected_views.end(), 
+							      normalized_projected_views.at(0).begin(),
+							      normalized_projected_views.at(0).end());
+		  }
+		  break;  
+		  
+		default:
+		  ROS_INFO("The maximum_entropy_index is out of scope [0-2], It is %d", maximum_entropy_index);
+		  break;
+	      }
+		
+	      return 0;
+	    }
+	    
+	    int compute_largest_side_of_bounding_box(geometry_msgs::Vector3 dimensions,  double &largest_side )
+	    {
+		
+		    if ((dimensions.y >= dimensions.x))
+		    {
+		      if (dimensions.y >= dimensions.z)
+		      {
+			largest_side = dimensions.y;
+		      }
+		      else if (dimensions.z >= dimensions.x)
+		      {
+			largest_side= dimensions.z;
+		      }
+		      
+		    } 
+		    else if(dimensions.z >= dimensions.x)
+		    {
+		      if (dimensions.z >= dimensions.y)
+		      {
+			largest_side = dimensions.z;
+		      }
+		    }
+		    else
+		    {
+		      largest_side = dimensions.x;
+		    }
+		    
+		    return 0;
+	    }
+	    
+
+namespace race_object_descriptor
+{
+    template <class PointT>
+        class ObjectDescriptor: public nodelet::Nodelet 
+    {
+        public:
+            //Type defs
+
+            //local variables
+            string _name;
+            bool _verb;
+            ros::NodeHandle* _p_nh; // The pointer to the node handle
+            ros::NodeHandle _nh; // The node handle
+            ros::NodeHandle _priv_nh; // The node handle
+            ros::NodeHandle* _p_priv_nh; // The node handle
+            bool _flg_is_nodelet; //a flag to check if this code is running as a node or a nodelet
+            boost::shared_ptr<ros::Subscriber> _p_pcin_subscriber;
+            boost::shared_ptr<ros::Subscriber> _p_pcin_subscriber2;
+
+            //boost::shared_ptr<ros::Publisher> _p_pcin_publisher;
+            boost::shared_ptr<ros::Publisher> _p_crtov_publisher;
+	    boost::shared_ptr<ros::Publisher> _p_projected_object_point_cloud_to_table_publisher;
+	    boost::shared_ptr<ros::Publisher> _p_projected_object_point_cloud_to_table_publisher2;
+
+	    boost::shared_ptr<class_colormap_utils> cm; //a colormap class
+            
+            Publisher marker_publisher;
+            Publisher neat_marker_publisher;
+
+            std::string _id_name;
+            PerceptionDB* _pdb; //initialize the class
+            boost::shared_ptr<CycleDebug> cd;
+
+	    tf::StampedTransform stf;
+
+	    tf::StampedTransform transf_object;
+
+
+            /* _________________________________
+               |                                 |
+               |           PARAMETERS			|
+               |_________________________________| */
+
+            //double _param1;
+            //string _param2;
+
+            /* _________________________________
+               |                                 |
+               |           CONSTRUCTORS          |
+               |_________________________________| */
+
+            ObjectDescriptor(){_flg_is_nodelet = true;};
+
+            ObjectDescriptor(ros::NodeHandle* n)
+            {
+                _flg_is_nodelet = false; 
+                _p_nh = n; //if this is a node set both the nodehandle and private node handle to n
+                _p_priv_nh = n; 
+                onInit();
+            };
+
+            /**
+             * @brief Destructor
+             */
+            ~ObjectDescriptor()
+            {
+                PrettyPrint pp(_name);
+                pp.info(std::ostringstream().flush() << _name.c_str() << ": Destructor called");
+                pp.info(std::ostringstream().flush() << _name.c_str() << ": Finished destructor");
+                pp.printCallback();
+
+
+            };
+
+	    /* _________________________________
+               |                                 |
+               |           CLASS METHODS         |
+               |_________________________________| */
+
+ 	    /* _________________________________
+               |                                 |
+               |           CLASS METHODS         |
+               |_________________________________| */
+
+            void onInit(void)
+            {
+                //create a node handle in internal nh_ variable, and point p_nh_
+                //to it. Only done if we are using a nodelet.
+                if (_flg_is_nodelet == true)
+                {
+                    _nh = getNodeHandle(); 
+                    _p_nh = &_nh;
+                    _priv_nh = getPrivateNodeHandle(); 
+                    _p_priv_nh = &_priv_nh;
+                }
+
+                /////////////////////////////////
+                /* ______________________________
+                   |                             |
+                   |  working area for grasping  |
+                   |_____________________________| */
+		
+		//init listener
+		_p_transform_listener = (boost::shared_ptr<tf::TransformListener>) new tf::TransformListener;
+		ros::Duration(0.5).sleep();
+		ROS_INFO(" a tf lisener has been created" )  ;	
+		//init broadcaster
+		_br = (boost::shared_ptr<TransformBroadcaster>) new TransformBroadcaster;
+
+		ROS_INFO(" a tf broadcaster has been created" )  ;	
+
+                _id_name = "_ObjID_";
+                //Initialize tf stuff
+
+                //initialize parameters
+                _name = _p_priv_nh->getNamespace();
+
+                PrettyPrint pp(_name);
+
+                _p_priv_nh->param<bool>("verbose", _verb , false);
+
+		//read spin images parameters
+		_p_priv_nh->param<int>("/perception/spin_image_width", spin_image_width, spin_image_width);
+		_p_priv_nh->param<double>("/perception/spin_image_support_lenght", spin_image_support_lenght, spin_image_support_lenght);
+		_p_priv_nh->param<int>("/perception/subsample_spinimages", subsample_spinimages, subsample_spinimages);
+		_p_priv_nh->param<double>("/perception/uniform_sampling_size", uniform_sampling_size, uniform_sampling_size);
+	
+		//new object descriptor parameters
+		_p_priv_nh->param<int>("/perception/number_of_bins", number_of_bins, number_of_bins);
+		_p_priv_nh->param<double>("/perception/global_image_width", global_image_width, global_image_width);
+		_p_priv_nh->param<int>("/perception/adaptive_support_lenght", adaptive_support_lenght, adaptive_support_lenght);
+
+
+		signDisambiguationFlag = false;
+		
+		//Create a new colormap	
+		cm = (boost::shared_ptr<class_colormap_utils>) new class_colormap_utils(std::string("hot"),5, 1, false);
+		
+                //create a cycle debug
+                cd = (boost::shared_ptr<CycleDebug>) new CycleDebug(_p_nh, _name);
+
+                //initialize the subscriber
+                //topic name is computed by getting the namespace path and then adding
+		unsigned found = _name.find_last_of("/\\");
+                std::string pcin_topic = _name.substr(0,found) + "/tracker/tracked_object_point_cloud";
+		ROS_INFO("pcin");
+                _p_pcin_subscriber = (boost::shared_ptr<ros::Subscriber>) new ros::Subscriber;
+                *_p_pcin_subscriber = _p_nh->subscribe (pcin_topic, 1, &ObjectDescriptor::callback, this);
+
+                //initialize the Publisher
+		_p_crtov_publisher = (boost::shared_ptr<ros::Publisher>) new ros::Publisher;
+                *_p_crtov_publisher = _p_priv_nh->advertise<race_perception_msgs::CompleteRTOV> ("histogram_tracked_object_view", 1000);
+		
+		//initialize the publishers
+		neat_marker_publisher = _p_nh->advertise<visualization_msgs::MarkerArray>("/perception/object_descriptor/neat_markers", 100);
+			
+		
+		_p_crtov_publisher = (boost::shared_ptr<ros::Publisher>) new ros::Publisher;
+                *_p_crtov_publisher = _p_priv_nh->advertise<race_perception_msgs::CompleteRTOV> ("new_histogram_tracked_object_view", 100);
+
+		_p_projected_object_point_cloud_to_table_publisher = (boost::shared_ptr<ros::Publisher>) new ros::Publisher;
+		*_p_projected_object_point_cloud_to_table_publisher = _p_nh->advertise<sensor_msgs::PointCloud2>("/projected_object_point_clouds", 100);
+	
+		_p_projected_object_point_cloud_to_table_publisher2 = (boost::shared_ptr<ros::Publisher>) new ros::Publisher;
+		*_p_projected_object_point_cloud_to_table_publisher2 = _p_nh->advertise<sensor_msgs::PointCloud2>("/projected_object_point_clouds_after_transform", 100);
+	
+		
+                //initialize the database
+                _pdb = race_perception_db::PerceptionDB::getPerceptionDB(_p_priv_nh, _flg_is_nodelet); //initialize the database class
+
+                //Output initialization information
+                pp.printInitialization();				
+
+            };
+
+	    
+            /**
+             * @brief This is the callback.
+             * @param msg
+             */
+          
+	    int compuet_object_description( boost::shared_ptr<pcl::PointCloud<T> > object_view,
+ 					     boost::shared_ptr<pcl::PointCloud<T> > pca_object_view,
+					     Eigen::Vector3f center_of_bbox,
+					     vector < boost::shared_ptr<pcl::PointCloud<T> > >  all_projected_views, 
+					     string object_frame_id, 
+					     unsigned int TID , 
+					     double largest_side, 
+					     int sign,
+					     vector <float> view_point_entropy,
+					     string std_name_of_sorted_projected_plane)		
+	    {
+
+		vector < boost::shared_ptr<pcl::PointCloud<PointT> > > vector_of_projected_views;
+		boost::shared_ptr<pcl::PointCloud<PointT> > initial_cloud_proj_x (new PointCloud<PointT>);//Declare a boost share ptr to the pointCloud
+		boost::shared_ptr<pcl::PointCloud<PointT> > initial_cloud_proj_y (new PointCloud<PointT>);//Declare a boost share ptr to the pointCloud
+		boost::shared_ptr<pcl::PointCloud<PointT> > initial_cloud_proj_z (new PointCloud<PointT>);//Declare a boost share ptr to the pointCloud
+		bool visualize = false;
+		PointXYZ pt; 
+
+		
+		/* ____________________________
+		  |                            |
+		  | construct ORF based on PCA |
+		  |____________________________| */
+		
+		  ///////////////////////////////////////////////// the theory of new shape descriptor ////////////////////////////////////////////////////////////////
+		  // //NOTE  the PCA base reference frame construction basically does:
+		  // 1) compute the centroid (c0, c1, c2) and the normalized covariance
+		  // 2) compute the eigenvectors e0, e1, e2. The reference system will be (e0, e1, e0 X e1) --- note: e0 X e1 = +/- e2
+		  // 3) move the points in that RF --- note: the transformation given by the rotation matrix (e0, e1, e0 X e1) & (c0, c1, c2) must be inverted
+		  // 4) compute the max, the min and the center of the diagonal (mean_diag)
+		  // 5) given a box centered at the origin with size (max_pt.x - min_pt.x, max_pt.y - min_pt.y, max_pt.z - min_pt.z) 
+		  //    the transformation you have to apply is Rotation = (e0, e1, e0 X e1) & Translation = Rotation * mean_diag + (c0, c1, c2)
+
+		  
+		  // compute principal directions
+		  
+		  Eigen::Vector4f centroid;
+		  pcl::compute3DCentroid(*target_pc, centroid);
+		  Eigen::Matrix3f covariance;
+		  computeCovarianceMatrixNormalized(*target_pc, centroid, covariance);
+		  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver(covariance, Eigen::ComputeEigenvectors);
+		  Eigen::Matrix3f eigVectors = eigen_solver.eigenvectors();
+		  eigVectors.col(2) = eigVectors.col(0).cross(eigVectors.col(1));
+		  std::cout << "first column: " << eigVectors.col(0) << std::endl;
+
+		  //std::cout << "first element of the first col: " << eigVectors(0,0) << std::endl;
+		  //std::cout << "second element of the first col: " << eigVectors(1,0) << std::endl;  
+		  //std::cout << "third element of the first col:" << eigVectors(2,0) << std::endl;  
+
+		  Eigen::Vector3f eigen_values =  eigen_solver.eigenvalues();
+		  //std::cout << "The eigenvalues of the covariance matrix are:" << eigen_values << endl;
+		  std::cout << "The eigenvalue of the X axis is :" << eigen_values(0,0) << endl;
+		  std::cout << "The eigenvalue of the Y axis is :" << eigen_values(0,1) << endl;
+		  std::cout << "The eigenvalue of the Z axis is :" << eigen_values(0,2) << endl;
+
+		  // move the points to the PCA based reference frame
+		  Eigen::Matrix4f p2w(Eigen::Matrix4f::Identity());
+		  p2w.block<3,3>(0,0) = eigVectors.transpose();
+		  p2w.block<3,1>(0,3) = -1.f * (p2w.block<3,3>(0,0) * centroid.head<3>());
+		  
+		  //Declare a boost share ptr to the PCA_pointCloud
+		  boost::shared_ptr<PointCloud<PointT> > pca_pc (new PointCloud<PointT>); 
+		  
+		  pcl::PointCloud<PointT> cPoints;
+		  pcl::transformPointCloud(*target_pc, *pca_pc, p2w);
+
+		  //compute the max, the min and the center of the diagonal (mean_diag)
+		  PointT min_pt, max_pt;
+		  pcl::getMinMax3D(*pca_pc, min_pt, max_pt);
+		  const Eigen::Vector3f mean_diag = 0.5f*(max_pt.getVector3fMap() + min_pt.getVector3fMap());
+
+ 		  // centroid transform
+		  Eigen::Quaternionf qfinal(eigVectors);//rotation matrix
+		  Eigen::Vector3f center_of_bbox = eigVectors*mean_diag + centroid.head<3>(); // Translation = Rotation * center_diag + (c0, c1, c2)
+		  std::cout << "center of box (x,y,z) =" << center_of_bbox << std::endl;
+
+  	      /* _________________________________
+		|                           	   |
+		| construct three projection view |
+		|_________________________________| */
+		  		
+		// ax+by+cz+d=0, where b=c=d=0, and a=1, or said differently, the YoZ plane.
+		pcl::ModelCoefficients::Ptr coefficientsX (new pcl::ModelCoefficients ());
+		coefficientsX->values.resize (4);
+		coefficientsX->values[0] = 1.0; coefficientsX->values[1] = 0; coefficientsX->values[2] = 0; coefficientsX->values[3] = 0;
+		project_pc_to_plane(pca_pc, coefficientsX, initial_cloud_proj_x);
+		for (int i=0; i< initial_cloud_proj_x->points.size(); i++)
+		{
+		    initial_cloud_proj_x->points.at(i).x = 0.3;
+		}
+		vector_of_projected_views.push_back(initial_cloud_proj_x);
+
+		
+		//ax+by+cz+d=0, where a=c=d=0, and b=1, or said differently, the XoZ plane.
+		pcl::ModelCoefficients::Ptr coefficientsY (new pcl::ModelCoefficients ());
+		coefficientsY->values.resize (4);
+		coefficientsY->values[0] = 0.0; coefficientsY->values[1] = 1.0; coefficientsY->values[2] = 0; coefficientsY->values[3] = 0;
+
+		project_pc_to_plane(pca_pc, coefficientsY, initial_cloud_proj_y);
+		for (int i=0; i< initial_cloud_proj_y->points.size(); i++)
+		{
+		    initial_cloud_proj_y->points.at(i).y = 0.3;
+		}
+		vector_of_projected_views.push_back(initial_cloud_proj_y);
+
+		  	  
+		// ax+by+cz+d=0, where a=b=d=0, and c=1, or said differently, the XoY plane.
+		pcl::ModelCoefficients::Ptr coefficientsZ (new pcl::ModelCoefficients ());
+		coefficientsZ->values.resize (4); 
+		coefficientsZ->values[0] = 0; coefficientsZ->values[1] = 0; coefficientsZ->values[2] = 1.0;   coefficientsZ->values[3] = 0;
+		project_pc_to_plane(pca_pc, coefficientsZ, initial_cloud_proj_z);
+		for (int i=0; i< initial_cloud_proj_z->points.size(); i++)
+		{
+		    initial_cloud_proj_z->points.at(i).z = 0.30;
+		}		
+		vector_of_projected_views.push_back(initial_cloud_proj_z);
+	      
+		  
+	      /* ____________________________
+		|                           |
+		|  Axes sign disambiguation |
+		|___________________________| */
+		  		
+		geometry_msgs::Vector3 dimensions;
+		compute_bounding_box_dimensions(pca_pc, dimensions);
+		ROS_INFO("Box's dimensions (x, y, z) = (%f, %f, %f) ", dimensions.x, dimensions.y, dimensions.z);
+		double largest_side;
+		compute_largest_side_of_bounding_box(dimensions ,largest_side);		
+
+		if (adaptive_support_lenght == 0)
+		{
+		  largest_side +=0.02;
+		  ROS_INFO("Dimension of the (largest_side+0.02)/2 is %f m", largest_side/2);
+		  ROS_INFO("adaptive_support_lenght = %d", adaptive_support_lenght);
+		}
+		else
+		{
+		  largest_side = global_image_width;
+		  ROS_INFO("global_image_width = %f", largest_side);
+		  ROS_INFO("adaptive_support_lenght = %d", adaptive_support_lenght);
+		}
+		  
+	      /* ____________________________
+		|                           |
+		|  Axes sign disambiguation |
+		|___________________________| */
+	    
+		int Sx=1, Sy=1;
+		XsignDisambiguation(initial_cloud_proj_y, threshold, Sx );//XoZ Plane
+		YsignDisambiguation(initial_cloud_proj_x, threshold, Sy );//YoZ Plane
+		sign = Sx * Sy;
+		ROS_INFO("sign = Sx (%d) * Sy(%d) = %d", Sx, Sy, sign);
+		ROS_INFO("signDisambiguationFlag is updated");
+
+	    /* _________________________________________________________
+	      |                       				       	  |
+	      |  compute histograms of projection of the given object   |
+	      |_________________________________________________________| */
+		
+		vector <int> complete_object_histogram;
+		vector <int> complete_object_histogram_normalized;//each projection view is normalized sepreatly
+		vector < vector<int> > XOZ_histogram;      
+		vector < vector<int> > YOZ_histogram;
+		vector <float> view_point_entropy;
+		vector <vector <float> > normalized_projected_views;
+
+		//projection along X axis
+		YOZ2DObjectHistogram( initial_cloud_proj_x,
+				      largest_side, 
+				      number_of_bins, 
+				      sign,
+				      YOZ_histogram);
+		
+		vector <int> histogramYOZ1D;
+		convert2DhistogramTo1Dhisftogram(YOZ_histogram, histogramYOZ1D);
+		//printHistogram ( histogramYOZ1D, "YOZ");
+		complete_object_histogram.insert(complete_object_histogram.end(), histogramYOZ1D.begin(), histogramYOZ1D.end());
+		vector <float> normalized_histogramYoZ;
+		normalizingHistogram( histogramYOZ1D, normalized_histogramYoZ);
+		normalized_projected_views.push_back(normalized_histogramYoZ);
+		
+		//printHistogram ( normalized_histogramYoZ, "normalized YOZ");
+		complete_object_histogram_normalized.insert(complete_object_histogram_normalized.end(), normalized_histogramYoZ.begin(), normalized_histogramYoZ.end());
+		float YoZ_entropy = 0;
+		//viewpointEntropy(normalized_histogramYoZ, YoZ_entropy);
+		viewpointEntropyNotNormalized(histogramYOZ1D, YoZ_entropy);
+
+		ROS_INFO("viewpointEntropyYoZ = %f", YoZ_entropy);
+		view_point_entropy.push_back(YoZ_entropy);
+
+		//projection along Y axis
+		XOZ2DObjectHistogram( initial_cloud_proj_y,
+				      largest_side, 
+				      number_of_bins, 
+				      sign,
+				      XOZ_histogram);
+ 	      
+		vector <int> histogramXOZ1D;
+		convert2DhistogramTo1Dhisftogram(XOZ_histogram, histogramXOZ1D);
+		//printHistogram ( histogramXOZ1D, "XOZ");
+		complete_object_histogram.insert(complete_object_histogram.end(), histogramXOZ1D.begin(), histogramXOZ1D.end());
+
+		vector <float> normalized_histogramXoZ;
+		normalizingHistogram( histogramXOZ1D, normalized_histogramXoZ);
+		//printHistogram ( normalized_histogramXoZ, "normalized XOZ");
+		normalized_projected_views.push_back(normalized_histogramXoZ);
+
+		complete_object_histogram_normalized.insert(complete_object_histogram_normalized.end(), 
+							   normalized_histogramXoZ.begin(), 
+							   normalized_histogramXoZ.end());
+		float XoZ_entropy = 0;
+		//viewpointEntropy(normalized_histogramXoZ, XoZ_entropy);
+		viewpointEntropyNotNormalized(histogramXOZ1D, XoZ_entropy);
+		ROS_INFO("viewpointEntropyXoZ = %f", XoZ_entropy);
+		view_point_entropy.push_back(XoZ_entropy);
+
+
+		//projection along Z axis
+		vector < vector<int> > XOY_histogram;		
+	        XOY2DObjectHistogram( initial_cloud_proj_z,
+					largest_side, 
+					number_of_bins, 
+					sign,
+					XOY_histogram);
+
+		vector <int> histogramXOY1D;
+		convert2DhistogramTo1Dhisftogram(XOY_histogram, histogramXOY1D);
+		//printHistogram ( histogramXOY1D, "XOY");		
+		complete_object_histogram.insert(complete_object_histogram.end(), histogramXOY1D.begin(), histogramXOY1D.end());
+		//printHistogram ( complete_object_histogram, "complete_object_histogram");
+		
+		vector <float> normalized_histogramXoY;
+		normalizingHistogram( histogramXOY1D, normalized_histogramXoY);
+		//printHistogram ( normalized_histogramXoY, "normalized XoY");
+		normalized_projected_views.push_back(normalized_histogramXoY);
+
+		complete_object_histogram_normalized.insert(complete_object_histogram_normalized.end(), normalized_histogramXoY.begin(), normalized_histogramXoY.end());
+		float XoY_entropy = 0;
+		//viewpointEntropy(normalized_histogramXoY, XoY_entropy);
+		viewpointEntropyNotNormalized(histogramXOY1D, XoY_entropy);
+
+		ROS_INFO("viewpointEntropyXoY = %f", XoY_entropy);
+		view_point_entropy.push_back(XoY_entropy);
+
+		//printHistogram ( complete_object_histogram_normalized, "complete_object_histogram_normalized");
+		
+		vector <float> normalized_histogram;
+ 		normalizingHistogram( complete_object_histogram, normalized_histogram);
+		//printHistogram ( normalized_histogram, "normalized_complete_object_histogram");
+
+		int maximum_entropy_index = 0;
+		findMaxViewPointsEntropy(view_point_entropy, maximum_entropy_index);
+		ROS_INFO("Summary of entropy : \n H(YoZ) = %f, H(XoZ) = %f, H(XoY) = %f, Max_ind = %d", 
+			  view_point_entropy.at(0), view_point_entropy.at(1), view_point_entropy.at(2) , maximum_entropy_index );		
+		
+		vector< float > sorted_normalized_projected_views;
+		string std_name_of_sorted_projected_plane;
+		objectViewHistogram( maximum_entropy_index,
+				     view_point_entropy,
+				    normalized_projected_views,
+				    sorted_normalized_projected_views,
+				    std_name_of_sorted_projected_plane
+ 				  );
+		
+		ROS_INFO("Projected views are sorted as follows: %s", std_name_of_sorted_projected_plane.c_str());   		
+		//printHistogram ( sorted_normalized_projected_views, "sorted_normalized_projected_views");
+		
+		SITOV object_representation;
+		for (size_t i = 0; i < normalized_histogram.size(); i++)
+		{
+		    object_representation.spin_image.push_back(normalized_histogram.at(i));
+		}
+	    
+	     return 0; 
+	    }
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	  void callback(const race_perception_msgs::PCTOV::ConstPtr& msg)
+            {
+	      //NOTE : there is a bug in global one 
+	      
+	      //std::reverse(myvector.begin(),myvector.end());
+                cd->tic();//cycle debug tic
+                PrettyPrint pp(_name);
+		ROS_INFO("//////////////////////////////// TID = %d ///////////////////////////////////////////", msg-> track_id);
+
+		//read spin images parameters
+		_p_priv_nh->param<int>("/perception/spin_image_width", spin_image_width, spin_image_width);
+		_p_priv_nh->param<double>("/perception/spin_image_support_lenght", spin_image_support_lenght, spin_image_support_lenght);
+		_p_priv_nh->param<int>("/perception/subsample_spinimages", subsample_spinimages, subsample_spinimages);
+      		_p_priv_nh->param<double>("/perception/uniform_sampling_size", uniform_sampling_size, uniform_sampling_size);
+
+		//parameters of new object descriptor
+		_p_priv_nh->param<int>("/perception/number_of_bins", number_of_bins, number_of_bins);
+		_p_priv_nh->param<double>("/perception/global_image_width", global_image_width, global_image_width);		
+		_p_priv_nh->param<int>("/perception/adaptive_support_lenght", adaptive_support_lenght, adaptive_support_lenght);
+		_p_priv_nh->param<int>("/perception/sign", sign, sign);
+		_p_priv_nh->param<int>("/perception/off_line_flag", off_line_flag, off_line_flag);
+
+		pp.info(std::ostringstream().flush()<<"\t\t[-] spin_image_width :"<< spin_image_width);
+		pp.info(std::ostringstream().flush()<<"\t\t[-] spin_image_support_lenght :"<< spin_image_support_lenght);
+		pp.info(std::ostringstream().flush()<<"\t\t[-] subsample_spinimages :"<< subsample_spinimages);
+		
+						
+		ros::Time beginProc = ros::Time::now(); //start tic
+		
+		//Declare a boost share ptr to the pointCloud
+                boost::shared_ptr<PointCloud<PointT> > target_pc (new PointCloud<PointT>); 
+                pcl::fromROSMsg(msg->point_cloud,*target_pc ); //Convert the pointcloud msg to a pcl point cloud
+		
+		ROS_INFO("given point cloud has %d points ", target_pc->points.size());
+		
+		string _fixed_frame_id_tmp = "/odom_combined";
+		string _table_frame_id = "/perception/tabletop_segmentation/table";
+		
+		std::string tracker_frame_id = "/perception/pipeline" + boost::lexical_cast<std::string>(msg->track_id) + "/tracker";
+		
+		transf_object.setOrigin( tf::Vector3(0, 0, 0) );
+		tf::Quaternion rotation;
+		//rotation.setRPY(0, 0, 1.57);
+		rotation.setRPY(0, 0, 0);	
+		transf_object.setRotation(rotation);
+		
+		_br->sendTransform(StampedTransform(transf_object, Time::now(), "/odom_combined", tracker_frame_id));
+
+		
+		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	
+		/* _____________________________________________
+                   |                                            |
+                   |  Write features to DB based on TID and VID |
+                   |____________________________________________| */
+
+                beginProc = ros::Time::now();
+
+                //Declare SITOV (Spin Images of Tracked Object View)
+                SITOV _sitov;
+
+                //Declare RTOV (Representation of Tracked Object View)
+                RTOV _rtov;
+                _rtov.track_id = msg->track_id;
+                _rtov.view_id = msg->view_id;
+
+		pp.info(std::ostringstream().flush() << "Track_id = " << msg->track_id << "\tView_id = " << msg->view_id );
+		
+		
+                //declare the RTOV complete variable
+                race_perception_msgs::CompleteRTOV _crtov;
+                _crtov.track_id = msg->track_id;
+                _crtov.view_id = msg->view_id;
+                _crtov.ground_truth_name = msg->ground_truth_name.c_str();
+
+// 		    ROS_INFO("ground_truth_name = %s", msg->ground_truth_name.c_str());
+
+                //Add the object view representation in msg_out to put in the DB
+		_sitov = object_representation; //copy spin images
+		_sitov.track_id = msg->track_id; //copy track_id
+		_sitov.view_id = msg->view_id; //copy view_id
+		_sitov.spin_img_id = 1; //copy spin image id
+
+		//Addd sitov to completertov sitov list
+		_crtov.sitov.push_back(_sitov);
+
+		if (msg->is_key_view) //add sitovs to the DB only if this is a key view
+		{
+		    //Serialize to add to DB
+		    uint32_t serial_size = ros::serialization::serializationLength(_sitov);
+		    boost::shared_array<uint8_t> buffer(new uint8_t[serial_size]);
+		    PerceptionDBSerializer<boost::shared_array<uint8_t>, SITOV>::serialize(buffer, _sitov, serial_size);	
+		    leveldb::Slice s((char*)buffer.get(), serial_size);
+		    std::string key = _pdb->makeSIKey(key::SI, msg->track_id, msg->view_id, 1 );
+
+		    //Put slice to the DB
+		    _pdb->put(key, s); 
+
+		    //Add to the list of SITOV keys for this RTOV
+		    _rtov.sitov_keys.push_back(key);
+		    buffer.reset();
+		}
+
+                //Add RTOV to the DB (only if this is a key view)
+                if (msg->is_key_view)                 
+                {
+                    uint32_t serial_size = ros::serialization::serializationLength(_rtov);
+                    boost::shared_array<uint8_t> buffer(new uint8_t[serial_size]);
+                    PerceptionDBSerializer<boost::shared_array<uint8_t>, RTOV>::serialize(buffer, _rtov, serial_size);	
+                    leveldb::Slice s((char*)buffer.get(), serial_size);
+                    std::string key = _pdb->makeKey(key::RV, msg->track_id, msg->view_id);
+
+                    //Put slice to the db
+                    _pdb->put(key, s);
+                    buffer.reset();
+                }
+
+                //Publish the CompleteRTOV to recognition
+                _p_crtov_publisher->publish (_crtov);
+
+                //Toc
+                ros::Duration duration = (ros::Time::now() - beginProc);
+                double duration_sec = duration.toSec();
+                pp.info(std::ostringstream().flush() << "Write the features to DB took " << duration_sec << " secs");
+		
+		
+			     
+	
+		set_neat_visualization_marker_array_object_descriptor_vector_offline(   target_pc,
+											  pca_pc,
+											  center_of_bbox,
+											  vector_of_projected_views,
+											  msg->header.frame_id,
+											  msg -> track_id, 
+											  largest_side, 
+											  sign,
+											  view_point_entropy,
+											  std_name_of_sorted_projected_plane
+											  );	
+				//get toc
+                duration = ros::Time::now() - beginProc;
+                duration_sec = duration.toSec();
+	        ROS_INFO(" compute projection of given object to three main axes palnes took  %f secs ", duration_sec);
+		
+		/* ________________________________________________________
+		 |    				    	                 |
+                 |  compute bounding box dimensions fo the given object  |
+                 |_______________________________________________________| */
+
+// 		beginProc = ros::Time::now();
+// 		//initial_cloud_ref = cloud_reference;
+// 		geometry_msgs::Vector3 dimensions;
+// 		compute_bounding_box_dimensions(target_pc, dimensions);
+// 		ROS_INFO("box dimensions (x, y, z) = (%f, %f, %f) ", dimensions.x, dimensions.y, dimensions.z);
+// 		
+//                 //get toc
+//                 duration = ros::Time::now() - beginProc;
+//                 duration_sec = duration.toSec();
+//                 ROS_INFO("Compute bounding box for given object took %f secs", duration_sec );
+
+            }
+
+
+            /* _________________________________
+               |                                 |
+               |           ACCESSORS             |
+               |_________________________________| */
+	    
+	    template <typename T>
+	    int set_neat_visualization_marker_array_object_descriptor_vector_offline( boost::shared_ptr<pcl::PointCloud<T> > object_view,
+										        boost::shared_ptr<pcl::PointCloud<T> > pca_object_view,
+										        Eigen::Vector3f center_of_bbox,
+											vector < boost::shared_ptr<pcl::PointCloud<T> > >  all_projected_views, 
+											string object_frame_id, 
+											unsigned int TID , 
+											double largest_side, 
+											int sign,
+											vector <float> view_point_entropy,
+											string std_name_of_sorted_projected_plane)
+	    {
+
+
+    
+	      
+		std::string tracker_frame_id = "/perception/pipeline" + boost::lexical_cast<std::string>(TID) + "/tracker";
+		
+		visualization_msgs::MarkerArray marker_array; 
+		//geometry_msgs::Point p;
+		double duration =1000;
+		bool locked = true;
+		bool finish= true;
+		//float center_of_projected_cloud_x=0 , center_of_projected_cloud_y=0 , center_of_projected_cloud_z=0 ;
+		//geometry_msgs::Point center_of_projected_cloud;
+		//geometry_msgs::Vector3 dimensions;
+		//geometry_msgs::Point p;
+		// int view_i = 1;
+		
+		
+		
+		//////////////////////////// working with a dataset /////////////////////////////
+		
+		geometry_msgs::Point center_of_boundingbox_cloud;
+// 		center_of_boundingbox_cloud.x=center_of_bbox(0,0);
+// 		center_of_boundingbox_cloud.y=center_of_bbox(0,1);
+// 		center_of_boundingbox_cloud.z=center_of_bbox(0,2);
+
+			
+		geometry_msgs::Point center_of_gravity_cloud;
+		geometry_msgs::Vector3 dimensions;
+		geometry_msgs::Point p;
+		float center_of_gravity_cloud_x=0 , center_of_gravity_cloud_y=0 , center_of_gravity_cloud_z=0 ;
+							
+		compute_bounding_box_dimensions(pca_object_view, dimensions);
+		center_of_boundingbox_cloud.x=dimensions.x/2;
+		center_of_boundingbox_cloud.y=dimensions.y/2;
+		center_of_boundingbox_cloud.z=dimensions.z/2;
+		/* ____________________________________
+		|                                     |
+		|   Draw  PCA Point Cloud of object   |
+		|_____________________________________| */
+	      
+		if (1)
+		{
+		      visualization_msgs::Marker marker;
+		      //marker.header.frame_id = object_frame_id;
+		      marker.header.stamp = ros::Time();		
+		      marker.frame_locked = locked;
+		      marker.header.frame_id = tracker_frame_id;
+
+		      marker.ns = "pca object view";
+		      marker.id = TID*20;
+		      marker.type = visualization_msgs::Marker::POINTS;
+		      marker.lifetime = Duration(duration);
+		      marker.action = visualization_msgs::Marker::ADD;
+		      marker.pose.position.x = 0;	marker.pose.position.y = 0;	marker.pose.position.z = 0;
+		      marker.pose.orientation.x = 0.0; marker.pose.orientation.y = 0.0; marker.pose.orientation.z = 0.0; marker.pose.orientation.w = 1.0;
+		      marker.color = cm->color(TID+15);
+		      marker.color.a = 1;
+		      marker.scale.x = 0.002; marker.scale.y = 0.002; marker.scale.z = 0.002; 
+		      
+		      for (size_t i=0; i< pca_object_view->points.size(); i++)
+		      {
+			  p.x = pca_object_view->points.at(i).x;
+			  p.y = pca_object_view->points.at(i).y;
+			  p.z = pca_object_view->points.at(i).z;
+
+			  center_of_gravity_cloud_x += p.x;
+			  center_of_gravity_cloud_y += p.y;
+			  center_of_gravity_cloud_z += p.z;
+
+			  marker.points.push_back(p);
+		      }
+
+		      center_of_gravity_cloud.x= center_of_gravity_cloud_x/object_view->points.size();
+		      center_of_gravity_cloud.y= center_of_gravity_cloud_y/object_view->points.size();
+		      center_of_gravity_cloud.z= center_of_gravity_cloud_z/object_view->points.size();
+		      marker_array.markers.push_back(marker);
+		  
+		}    
+
+		/* _________________________________
+		|                                 |
+		|   Draw  Point Cloud of object   |
+		|_________________________________| */
+	      
+		if (1)
+		{
+	  
+	    
+		  visualization_msgs::Marker marker;
+		  //marker.header.frame_id = object_frame_id;
+		  marker.header.stamp = ros::Time();		
+		  marker.frame_locked = locked;
+		  marker.header.frame_id = tracker_frame_id;
+
+		  marker.ns = "object view";
+		  marker.id = TID*1000;
+		  marker.type = visualization_msgs::Marker::POINTS;
+		  marker.lifetime = Duration(duration);
+		  marker.action = visualization_msgs::Marker::ADD;
+		  marker.pose.position.x = 0;	marker.pose.position.y = 0;	marker.pose.position.z = 0;
+
+		  marker.pose.orientation.x = 0.0; marker.pose.orientation.y = 0.0; marker.pose.orientation.z = 0.0; marker.pose.orientation.w = 1.0;
+		  marker.color = cm->color(TID);
+		  marker.scale.x = 0.002; marker.scale.y = 0.002; marker.scale.z = 0.002; marker.color.a = 1;
+		  //marker.color.r = 1.0; marker.color.g = 1.0;	marker.color.b = 1.0; marker.color.a = 1.0; 
+		  
+		  for (size_t i=0; i< object_view->points.size(); i++)
+		  {
+		      p.x = object_view->points.at(i).x;
+		      p.y = object_view->points.at(i).y;
+		      p.z = object_view->points.at(i).z;
+		      
+		      marker.points.push_back(p);
+		  }
+
+		  marker_array.markers.push_back(marker);
+		  
+		  
+			    
+		}    
+			    
+			    
+		
+		 /* _________________________________
+	      	   |                                 |
+	      	   |          DRAW BB WIREFRAME      |
+	      	   |_________________________________| */
+	      	if (1)
+	      	{
+	      		visualization_msgs::Marker marker;
+	      		marker.header.frame_id = tracker_frame_id;
+	      		marker.header.stamp = ros::Time();
+	      
+	      		marker.ns = "wireframe";
+	      		marker.id = TID*100;
+	      		marker.frame_locked = locked;
+	      		marker.type = visualization_msgs::Marker::LINE_LIST;
+	      		//if (finish)
+	      		//marker.action = visualization_msgs::Marker::DELETE;
+	      		//else
+	      		marker.action = visualization_msgs::Marker::ADD;
+	      		marker.lifetime = Duration(duration);
+	      
+			marker.pose.position.x = 0;	marker.pose.position.y = 0;	marker.pose.position.z = 0;
+
+// 		      
+			
+// 			marker.pose.position = center_of_boundingbox_cloud;
+			marker.pose.orientation.x = 0.0; marker.pose.orientation.y = 0.0; marker.pose.orientation.z = 0.0; marker.pose.orientation.w = 1.0;
+			    				
+			
+	      		marker.scale.x = 0.005; 
+	      		double x = dimensions.x/2; 
+	      		double y = dimensions.y/2; 
+	      		double z = dimensions.z/2; 
+	      
+	      		marker.color = cm->color(TID);
+	      		marker.color.r = 0.5;
+	      		marker.color.g = 0.5;
+	      		marker.color.b = 0.5;
+			marker.color.a = 0.1;
+	      		//marker
+	      		if (finish)
+	      		{
+	      			marker.color.r = 0.1;
+	      			marker.color.g = 0.1;
+	      			marker.color.b = 0.1;
+	      		}
+
+	      		geometry_msgs::Point p;
+	      		p.x =  x; p.y =  y; p.z =  z; marker.points.push_back(p);
+	      		p.x = -x; p.y =  y; p.z =  z; marker.points.push_back(p);
+	      		p.x =  x; p.y =  y; p.z = -z; marker.points.push_back(p);
+	      		p.x = -x; p.y =  y; p.z = -z; marker.points.push_back(p);
+	      		p.x =  x; p.y =  y; p.z = -z; marker.points.push_back(p);
+	      		p.x =  x; p.y =  y; p.z =  z; marker.points.push_back(p);
+	      		p.x = -x; p.y =  y; p.z = -z; marker.points.push_back(p);
+	      		p.x = -x; p.y =  y; p.z =  z; marker.points.push_back(p);
+	      
+	      		p.x =  x; p.y =  -y; p.z =  z; marker.points.push_back(p);
+	      		p.x = -x; p.y =  -y; p.z =  z; marker.points.push_back(p);
+	      		p.x =  x; p.y =  -y; p.z = -z; marker.points.push_back(p);
+	      		p.x = -x; p.y =  -y; p.z = -z; marker.points.push_back(p);
+	      		p.x =  x; p.y =  -y; p.z = -z; marker.points.push_back(p);
+	      		p.x =  x; p.y =  -y; p.z =  z; marker.points.push_back(p);
+	      		p.x = -x; p.y =  -y; p.z = -z; marker.points.push_back(p);
+	      		p.x = -x; p.y =  -y; p.z =  z; marker.points.push_back(p);
+	      
+	      		p.x =  x; p.y =  y; p.z =  z; marker.points.push_back(p);
+	      		p.x =  x; p.y = -y; p.z =  z; marker.points.push_back(p);
+	      		p.x =  x; p.y =  y; p.z = -z; marker.points.push_back(p);
+	      		p.x =  x; p.y = -y; p.z = -z; marker.points.push_back(p);
+	      
+	      		p.x = -x; p.y =  y; p.z =  z; marker.points.push_back(p);
+	      		p.x = -x; p.y = -y; p.z =  z; marker.points.push_back(p);
+	      		p.x = -x; p.y =  y; p.z = -z; marker.points.push_back(p);
+	      		p.x = -x; p.y = -y; p.z = -z; marker.points.push_back(p);
+	      
+	      		marker_array.markers.push_back(marker);
+	      	}
+	      
+	      
+	      	/* _________________________________
+	      	   |                                 |
+	      	   |             DRAW BBOX           |
+	      	   |_________________________________| */
+	      	if (1)
+	      	{
+	      		visualization_msgs::Marker marker;
+	      		marker.header.frame_id = tracker_frame_id;
+	      		marker.header.stamp = ros::Time();
+	      
+	      		marker.ns = "boundingbox";
+	      		marker.id = TID*290;
+	      		marker.type = visualization_msgs::Marker::CUBE;
+	      		marker.frame_locked = locked;
+	      		//if (finish)
+	      		//marker.action = visualization_msgs::Marker::DELETE;
+	      		//else
+	      		marker.action = visualization_msgs::Marker::ADD;
+	      		marker.lifetime = Duration(duration);
+	      
+// 			marker.pose.position = center_of_boundingbox_cloud;
+// 			marker.pose.position = center_of_gravity_cloud;
+
+			marker.pose.position.x = 0;	marker.pose.position.y = 0;	marker.pose.position.z = 0;
+
+			marker.pose.orientation.x = 0.0; marker.pose.orientation.y = 0.0; marker.pose.orientation.z = 0.0; marker.pose.orientation.w = 1.0;
+	      		
+			marker.scale.x = dimensions.x; 
+	      		marker.scale.y = dimensions.y; 
+	      		marker.scale.z = dimensions.z; 
+	      
+
+			marker.color = cm->color(TID);
+			marker.color.a = 0.2;
+			
+			if (finish)
+	      		{
+	      			marker.color.r = 0.9;
+	      			marker.color.g = 0.0;
+	      			marker.color.b = 0.0;
+	      		}
+	      
+	      		marker_array.markers.push_back(marker);
+	      	}
+		
+		
+		
+		
+		for (int view_i = 0; view_i< all_projected_views.size(); view_i++)			
+		{
+			geometry_msgs::Point center_of_projected_cloud;
+			geometry_msgs::Vector3 dimensions;
+			geometry_msgs::Point p;
+			float center_of_projected_cloud_x=0 , center_of_projected_cloud_y=0 , center_of_projected_cloud_z=0 ;
+			/* _________________________________
+			  |                                 |
+			  |   Draw Projected Point Cloud    |
+			  |_________________________________| */
+			if (1)
+			{
+		    
+		      
+			    visualization_msgs::Marker marker;
+			    //marker.header.frame_id = object_frame_id;
+			    marker.header.stamp = ros::Time();		
+			    marker.frame_locked = locked;
+			    marker.header.frame_id = tracker_frame_id;
+
+			    marker.ns = "projected views";
+			    marker.id = TID*520+view_i;
+			    marker.type = visualization_msgs::Marker::POINTS;
+			    marker.lifetime = Duration(duration);
+			    marker.action = visualization_msgs::Marker::ADD;
+			    marker.pose.position.x = 0;	marker.pose.position.y = 0;	marker.pose.position.z = 0;
+			    marker.pose.orientation.x = 0.0; marker.pose.orientation.y = 0.0; marker.pose.orientation.z = 0.0; marker.pose.orientation.w = 1.0;
+			    marker.color = cm->color(TID);
+			    marker.scale.x = 0.005; marker.scale.y = 0.005; marker.scale.z = 0.005; marker.color.a = 1;
+			    //marker.color.r = 1.0; marker.color.g = 1.0;	marker.color.b = 1.0; marker.color.a = 1.0; 
+			    
+			    //marker.points.erase(marker.points.begin(), marker.points.end());
+			    geometry_msgs::Point p;
+
+			    for (size_t i=0; i<all_projected_views.at(view_i)-> points.size(); i++)
+			    {
+// 				p.x = sign * all_projected_views.at(view_i)->points.at(i).x;
+// 				p.y = sign * all_projected_views.at(view_i)->points.at(i).y;
+// 				p.z = all_projected_views.at(view_i)->points.at(i).z;
+// 				marker.points.push_back(p);
+
+				all_projected_views.at(view_i)->points.at(i).x = sign * all_projected_views.at(view_i)->points.at(i).x;
+				all_projected_views.at(view_i)->points.at(i).y = sign * all_projected_views.at(view_i)->points.at(i).y;
+				p.x = all_projected_views.at(view_i)->points.at(i).x;
+				p.y = all_projected_views.at(view_i)->points.at(i).y;
+				p.z = all_projected_views.at(view_i)->points.at(i).z;
+				
+				marker.points.push_back(p);
+				center_of_projected_cloud_x += p.x;
+				center_of_projected_cloud_y += p.y;
+				center_of_projected_cloud_z += p.z;
+			    }
+
+			    marker_array.markers.push_back(marker);
+			    
+			    center_of_projected_cloud.x= center_of_projected_cloud_x/all_projected_views.at(view_i)->points.size();
+			    center_of_projected_cloud.y= center_of_projected_cloud_y/all_projected_views.at(view_i)->points.size();
+			    center_of_projected_cloud.z= center_of_projected_cloud_z/all_projected_views.at(view_i)->points.size();
+			    
+			}
+			
+			  /* _________________________________
+			    |                                 |
+			    |           Draw Plane            |
+			    |_________________________________| */
+			  if (1)
+			  {
+				  visualization_msgs::Marker marker;
+				  marker.header.frame_id = tracker_frame_id;
+				  marker.header.stamp = ros::Time();
+			
+				  marker.ns = "Plane";
+				  marker.id = TID*150+view_i;
+				  marker.type = visualization_msgs::Marker::CUBE;
+				  marker.frame_locked = locked;
+				  //if (finish)
+				  //marker.action = visualization_msgs::Marker::DELETE;
+				  //else
+				  marker.action = visualization_msgs::Marker::ADD;
+				  marker.lifetime = Duration(duration);
+			
+				  marker.pose.position =center_of_projected_cloud;
+
+				  //marker.pose.position.x = 0;	marker.pose.position.y = 0;	marker.pose.position.z = 0;
+
+				  //compute_bounding_box_dimensions(all_projected_views.at(view_i), dimensions);
+				  //ROS_INFO("Visuzlize box dimensions (x, y, z) = (%f, %f, %f) ", dimensions.x, dimensions.y, dimensions.z);
+				  
+				  if (view_i == 0)
+				  {
+				  	marker.scale.x = 0.0001;
+					marker.scale.y = largest_side; 
+					marker.scale.z = largest_side;
+					
+					dimensions.x = 0.0001; 
+					dimensions.y = largest_side; 
+					dimensions.z = largest_side;
+				  }
+				  else if (view_i ==1)
+				  {
+					marker.scale.x = largest_side; 
+					marker.scale.y =  0.0001;
+					marker.scale.z = largest_side; 
+					
+					dimensions.x = largest_side ; 
+					dimensions.y = 0.0001;
+					dimensions.z = largest_side; 
+			
+				  } 
+				  else
+				  {
+				      marker.scale.x = largest_side; 
+				      marker.scale.y = largest_side; 
+				      marker.scale.z = 0.0001;
+				      
+				      dimensions.x = largest_side; 
+				      dimensions.y = largest_side; 
+				      dimensions.z = 0.0001;
+				  }
+				  			  
+				  marker.color = cm->color(TID);		  
+				  marker.color.a = 0.3;
+						    
+		
+				  marker_array.markers.push_back(marker);
+			  }
+			  
+
+				  
+				  /* _________________________________
+				    |                                 |
+				    |         DRAW WIREFRAME          |
+				    |_________________________________| */
+				  if (1)
+				  {
+				    
+					  visualization_msgs::Marker marker;
+					  marker.header.frame_id = tracker_frame_id;
+					  marker.header.stamp = ros::Time();
+				
+					  marker.ns = "wireframe";
+					  marker.id = TID*170+view_i;
+					  marker.frame_locked = locked;
+					  marker.type = visualization_msgs::Marker::LINE_LIST;
+					  //if (finish)
+					  //marker.action = visualization_msgs::Marker::DELETE;
+					  //else
+					  marker.action = visualization_msgs::Marker::ADD;
+					  marker.lifetime = Duration(duration);
+							  
+					 marker.pose.position =center_of_projected_cloud;
+					 // marker.pose.position.x = 0;	marker.pose.position.y = 0;	marker.pose.position.z = 0;
+
+					  //marker.pose = _tracked_object_msg.bounding_box.pose_stamped.pose;
+				
+					  marker.scale.x = 0.003; 
+					  
+				
+					  marker.color.a = 0.5;
+					  marker.color.r = 0.5;
+					  marker.color.g = 0.5;
+					  marker.color.b = 0.5;
+					  //marker
+					  if (finish)
+					  {
+						  marker.color.r = 0.1;
+						  marker.color.g = 0.1;
+						  marker.color.b = 0.1;
+					  }
+
+					  
+					  
+					double x = dimensions.x/2; 
+					double y = dimensions.y/2; 
+					double z = dimensions.z/2; 
+// 					double x = largest_side/2; 
+// 					double y = largest_side/2; 
+// 					double z = largest_side/2; 
+					
+
+					    
+					int k =number_of_bins;
+					
+					double interval_x = dimensions.x/k; 
+					double interval_y = dimensions.y/k; 
+					double interval_z = dimensions.z/k; 
+
+// 					double interval_x = largest_side/k; 
+// 					double interval_y = largest_side/k; 
+// 					double interval_z = largest_side/k; 
+				    
+					if (view_i == 0)//for x
+					{
+					  //ROS_INFO("YOZ WIREFRAME plane size (x, y, z) = (%f, %f, %f) ", x, y, z);   
+					  // Page YOZ for Y axis
+					      for (int i=0; i<= k ; i++)  
+					      {	
+						    p.x = x; p.y = -y + i*interval_y; p.z = -z; 
+						    marker.points.push_back(p);
+						    p.x = x; p.y = -y + i*interval_y ; p.z =  z; 
+						    marker.points.push_back(p);	
+					      }
+					      
+					      // Page YOZ for Z axis
+					      for (int i=0; i<= k ; i++)  
+					      {
+						    p.x = x; p.y = y; p.z = -z + i*interval_z; 
+						    marker.points.push_back(p);
+						    p.x = x; p.y = -y ; p.z = -z + i*interval_z; ; 
+						    marker.points.push_back(p);
+					      }
+					      marker_array.markers.push_back(marker);
+					      
+					}
+					
+					else if (view_i == 1)//for y
+					{
+					  //ROS_INFO("XOZ WIREFRAME plane size (x, y, z) = (%f, %f, %f) ", x, y, z);   
+
+					      // Page XOZ for X axis
+					      for (int i=0; i<= k ; i++)  
+					      {	
+						    p.x = -x+ i*interval_x; p.y = y; p.z = -z; 
+						    marker.points.push_back(p);
+						    p.x = -x+ i*interval_x; p.y = y ; p.z =  z; 
+						    marker.points.push_back(p);	
+					      }
+					      
+					      // Page XOZ for Z axis
+					      for (int i=0; i<= k ; i++)  
+					      {
+						    p.x = x; p.y = y; p.z = -z + i*interval_z; 
+						    marker.points.push_back(p);
+						    p.x = -x; p.y = y ; p.z = -z + i*interval_z; ; 
+						    marker.points.push_back(p);
+					      }
+					      marker_array.markers.push_back(marker);
+
+					}
+					
+					else //for z
+					{
+					  //ROS_INFO("XOY WIREFRAME plane size (x, y, z) = (%f, %f, %f) ", x, y, z);   
+					      // Page XOY for X axis
+					      for (int i=0; i<= k ; i++)  
+					      {	
+						    p.x = -x+ i*interval_x; p.y = -y; p.z = z; 
+						    marker.points.push_back(p);
+						    p.x = -x+ i*interval_x; p.y = y ; p.z = z; 
+						    marker.points.push_back(p);	
+					      }
+					      
+					      // Page XOY for Y axis
+					      for (int i=0; i<= k ; i++)  
+					      {	
+						    p.x = -x; p.y = -y + i*interval_y; p.z = z; 
+						    marker.points.push_back(p);
+						    p.x = x; p.y = -y + i*interval_y ; p.z = z; 
+						    marker.points.push_back(p);	
+					      }
+					      marker_array.markers.push_back(marker);
+					      
+					}
+	      		      } 
+	      		     
+
+				
+	      		     
+				    /* _______________________
+				    |                         |
+				    |         histogram       |
+				    |_________________________| */
+				  if (1)
+				  {
+				    
+				        visualization_msgs::Marker marker;
+					//marker.header.frame_id = object_frame_id;
+					marker.header.stamp = ros::Time();		
+					marker.frame_locked = locked;
+					marker.header.frame_id = tracker_frame_id;
+
+					marker.ns = "histogram of projected views";
+					marker.id = TID*10+view_i;
+					marker.type = visualization_msgs::Marker::POINTS;
+					marker.lifetime = Duration(duration);
+					marker.action = visualization_msgs::Marker::ADD;
+// 					marker.pose.position.x = 0; marker.pose.position.y = 0;	marker.pose.position.z = 0;
+// 					marker.pose.orientation.x = 0.0; marker.pose.orientation.y = 0.0; marker.pose.orientation.z = 0.0; marker.pose.orientation.w = 1.0;
+					marker.color = cm->color(TID);
+					marker.scale.x = 0.01; marker.scale.y = 0.01; marker.scale.z = 0.01; marker.color.a = 1;
+					marker.color.r = 0.0; marker.color.g = 0.0;	marker.color.b = 1.0; marker.color.a = 1.0; 
+										  
+					  
+					double x = dimensions.x/2; 
+					double y = dimensions.y/2; 
+					double z = dimensions.z/2; 
+					    
+					int k =number_of_bins;
+					
+					double interval_x = dimensions.x/k; 
+					double interval_y = dimensions.y/k; 
+					double interval_z = dimensions.z/k; 
+
+// 					double interval_x = largest_side/k; 
+// 					double interval_y = largest_side/k; 
+// 					double interval_z = largest_side/k; 
+				    
+					if (view_i == 0)//for x
+					{
+					  //ROS_INFO("YOZ histogram");   
+					  for (int i=0; i<all_projected_views.at(view_i)-> points.size(); i++)
+					  {
+						geometry_msgs::Point p;
+						//p.x = all_projected_views.at(view_i)->points.at(i).x + x;
+						// 1/2 dimention is added to the real data to put all the data in positive scale between [0,2y][0-2z]
+						p.y = all_projected_views.at(view_i)->points.at(i).y + sign * y;
+						//p.y = all_projected_views.at(view_i)->points.at(i).y + y;
+						p.z = all_projected_views.at(view_i)->points.at(i).z + z;
+						//ROS_INFO("YOZ: P(y).(%i)= %f --- dy= %f", all_projected_views.at(view_i)->points.at(i).y, y );
+						//ROS_INFO("(trunc(p.y / interval_y)= %f and (trunc(p.z / interval_z) =%f", trunc(p.y / interval_y), trunc(p.z / interval_z));
+						if ((trunc(p.y / interval_y) == 0.0) and ((trunc(p.z / interval_z) == 0.0)))
+						{
+						    geometry_msgs::Point p;
+						    p.x=all_projected_views.at(view_i)->points.at(i).x;
+						    p.y=all_projected_views.at(view_i)->points.at(i).y;
+						    p.z=all_projected_views.at(view_i)->points.at(i).z;
+						    marker.points.push_back(p);
+			
+// 						    p.x=all_projected_views.at(view_i)->points.at(i).x;
+// 						    p.y= - all_projected_views.at(view_i)->points.at(i).y;
+// 						    p.z=all_projected_views.at(view_i)->points.at(i).z;
+// 						    marker.points.push_back(p);
+// 						    
+						}
+					    }
+					    marker_array.markers.push_back(marker);
+					      
+					}
+					
+					else if (view_i == 1)//for y
+					{
+					  //ROS_INFO("XOZ histogram");   
+					  for (int i=0; i<all_projected_views.at(view_i)-> points.size(); i++)
+					  {					    
+						geometry_msgs::Point p;
+						// 1/2 dimention is added to the real data to put all the data in positive scale between [0,2x][0-2z]
+						p.x = all_projected_views.at(view_i)->points.at(i).x + sign * x;
+						//p.x = all_projected_views.at(view_i)->points.at(i).x + x;
+						//p.y = all_projected_views.at(view_i)->points.at(i).y;
+						p.z = all_projected_views.at(view_i)->points.at(i).z + z;
+						//ROS_INFO("XOZ: P(x).(%i)= %f --- dx= %f", all_projected_views.at(view_i)->points.at(i).x, x );
+						//ROS_INFO("(trunc(p.x / interval_x)= %f and (trunc(p.z / interval_z) =%f", trunc(p.x / interval_x), trunc(p.z / interval_z));
+						
+						if ((trunc(p.x / interval_x) == 0.0) and ((trunc(p.z / interval_z) == 0.0)))
+						{
+						    geometry_msgs::Point p;
+						    p.x=all_projected_views.at(view_i)->points.at(i).x;
+						    p.y=all_projected_views.at(view_i)->points.at(i).y;
+						    p.z=all_projected_views.at(view_i)->points.at(i).z;
+						    marker.points.push_back(p);
+						    
+// 						    p.x= - all_projected_views.at(view_i)->points.at(i).x;
+// 						    p.y=all_projected_views.at(view_i)->points.at(i).y;
+// 						    p.z=all_projected_views.at(view_i)->points.at(i).z;
+// 						    marker.points.push_back(p);
+						}
+					    }
+					    marker_array.markers.push_back(marker);
+
+					}
+					
+					else //for z
+					{
+					  //ROS_INFO("XOY histogram");   					       
+					  for (int i=0; i<all_projected_views.at(view_i)-> points.size(); i++)
+					  {
+						geometry_msgs::Point p;
+						// 1/2 dimention is added to the real data to put all the data in positive scale between [0,2x][0-2y]
+						p.x = all_projected_views.at(view_i)->points.at(i).x + sign * x;						
+						p.y = all_projected_views.at(view_i)->points.at(i).y + sign * y;
+						//p.x = all_projected_views.at(view_i)->points.at(i).x +  x;						
+						//p.y = all_projected_views.at(view_i)->points.at(i).y +  y;
+						//p.z = all_projected_views.at(view_i)->points.at(i).z + z;
+						//ROS_INFO("XOY: P(x).(%i)= %f --- dx= %f", all_projected_views.at(view_i)->points.at(i).x, x );
+						//ROS_INFO("(trunc(p.x / interval_x)= %f and (trunc(p.y / interval_y) =%f", trunc(p.x / interval_x), trunc(p.y / interval_y));
+						if ((trunc(p.x / interval_x) == 0.0) and ((trunc(p.y / interval_y) == 0.0)))
+						{
+						    geometry_msgs::Point p;
+						    p.x=all_projected_views.at(view_i)->points.at(i).x;
+						    p.y=all_projected_views.at(view_i)->points.at(i).y;
+						    p.z=all_projected_views.at(view_i)->points.at(i).z;
+						    marker.points.push_back(p);
+						    
+// 						    p.x= - all_projected_views.at(view_i)->points.at(i).x;
+// 						    p.y= - all_projected_views.at(view_i)->points.at(i).y;
+// 						    p.z=all_projected_views.at(view_i)->points.at(i).z;
+// 						    marker.points.push_back(p);
+						}
+					    }
+					    marker_array.markers.push_back(marker);
+					      
+					}
+	      		      } 
+
+	      		      
+	      		      /* _________________________________
+				|                                 |
+				|         DRAW TEXT INFO          |
+				|_________________________________| */
+				if (1)
+				{
+					
+					visualization_msgs::Marker marker;
+					//marker.header.frame_id = object_frame_id;
+					marker.header.stamp = ros::Time();		
+					marker.frame_locked = locked;
+					marker.header.frame_id = tracker_frame_id;
+
+//					marker.pose.position =center_of_boundingbox_cloud;
+					marker.pose.position.x = 0;	marker.pose.position.y = 0;	marker.pose.position.z = 0;
+
+					marker.ns = "sign";
+					marker.id = TID*10+view_i;
+					marker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+					marker.lifetime = Duration(duration);
+					marker.action = visualization_msgs::Marker::ADD;
+					//marker.pose.position.x = 0 + marker.pose.position.x*0.9 + 0;
+					//marker.pose.position.y = 0 + marker.pose.position.y*0.9 + 0.1;
+					marker.pose.position.z = largest_side + 0.03;
+					marker.scale.z = 0.02; 
+					marker.color.r  = 1; marker.color.g  = 0; marker.color.b  = 0; marker.color.a = 1;
+					marker.text = "Sign = " + boost::lexical_cast<std::string>(sign);
+					marker_array.markers.push_back(marker);
+				}
+
+				if (1)
+				{
+					
+					visualization_msgs::Marker marker;
+					//marker.header.frame_id = object_frame_id;
+					marker.header.stamp = ros::Time();		
+					marker.frame_locked = locked;
+					marker.header.frame_id = tracker_frame_id;
+
+					//marker.pose.position =center_of_gravity_cloud;
+					marker.pose.position.x = 0;	marker.pose.position.y = 0;	marker.pose.position.z = 0;
+
+
+					marker.ns = "entropy";
+					marker.id = TID*100+view_i;
+					marker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+					marker.lifetime = Duration(duration);
+					marker.action = visualization_msgs::Marker::ADD;
+					//marker.pose.position.x = 0 + marker.pose.position.x*0.9 + 0;
+					//marker.pose.position.y = 0 + marker.pose.position.y*0.9 + 0.1;
+					marker.pose.position.z = largest_side + 0.25;
+					marker.scale.z = 0.02; 
+					marker.color.r  = 1; marker.color.g  = 0; marker.color.b  = 0; marker.color.a = 1;
+					marker.text = "H(YoZ) = " + boost::lexical_cast<std::string>(view_point_entropy.at(0))+
+						      "\nH(XoZ) = " + boost::lexical_cast<std::string>(view_point_entropy.at(1))+
+						      "\nH(XoY) = " + boost::lexical_cast<std::string>(view_point_entropy.at(2));
+					marker_array.markers.push_back(marker);
+				}
+
+				if (1)
+				{
+					
+					visualization_msgs::Marker marker;
+					//marker.header.frame_id = object_frame_id;
+					marker.header.stamp = ros::Time();		
+					marker.frame_locked = locked;
+					marker.header.frame_id = tracker_frame_id;
+
+					//marker.pose.position =center_of_gravity_cloud;
+					marker.pose.position.x = 0;	marker.pose.position.y = 0;	marker.pose.position.z = 0;
+
+
+					marker.ns = "sorted projections";
+					marker.id = TID*200+view_i;
+					marker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+					marker.lifetime = Duration(duration);
+					marker.action = visualization_msgs::Marker::ADD;
+					//marker.pose.position.x = 0 + marker.pose.position.x*0.9 + 0;
+					//marker.pose.position.y = 0 + marker.pose.position.y*0.9 + 0.1;
+					marker.pose.position.z = largest_side + 0.3;
+					marker.scale.z = 0.02; 
+					marker.color.r  = 0; marker.color.g  = 0; marker.color.b  = 0; marker.color.a = 1;
+					marker.text = std_name_of_sorted_projected_plane;
+					marker_array.markers.push_back(marker);
+				}
+
+				
+				
+			      /* _______________________________
+			      |                                 |
+			      |           DRAW XYZ AXES         |
+			      |_________________________________| */
+				if (1)
+				{	
+					visualization_msgs::Marker marker;
+					double axis_dimension = sign * 0.2;
+					marker.header.frame_id = tracker_frame_id;
+					marker.header.stamp = ros::Time();
+
+					marker.frame_locked = locked;
+					marker.type = visualization_msgs::Marker::LINE_STRIP;
+					marker.action = visualization_msgs::Marker::ADD;
+					marker.lifetime = Duration(duration);
+
+					//marker.pose.position =center_of_boundingbox_cloud;
+					marker.pose.position.x = 0;	marker.pose.position.y = 0;	marker.pose.position.z = 0;
+
+					marker.scale.x = 0.01; marker.scale.y = 0.5; marker.scale.z = 4;
+
+					//X axis
+					marker.ns = "axes_x";
+					marker.id = TID*10+view_i;;
+					marker.color.r = 1.0; marker.color.g = 0.0;	marker.color.b = 0.0; marker.color.a = 1.0; //red color
+					marker.points.erase(marker.points.begin(), marker.points.end());
+					p.x = 0; p.y = 0; p.z = 0; 
+					marker.points.push_back(p);
+					p.x = 1 * axis_dimension; p.y = 0; p.z = 0; 
+					marker.points.push_back(p);
+					marker_array.markers.push_back(marker);
+
+					//Y axis
+					marker.ns = "axes_y";
+					marker.id = TID*10+view_i;
+					marker.color.r = 0.0; marker.color.g = 1.0;	marker.color.b = 0.0; marker.color.a = 1.0; //green color
+					marker.points.erase(marker.points.begin(), marker.points.end());
+					p.x = 0; p.y = 0; p.z = 0; 
+					marker.points.push_back(p);
+					p.x = 0; p.y = 1 * axis_dimension; p.z = 0; 
+					marker.points.push_back(p);
+					marker_array.markers.push_back(marker);
+
+					//Z axis
+					marker.ns = "axes_z";
+					marker.id = TID*10+view_i;
+					marker.color.r = 0.0; marker.color.g = 0.0;	marker.color.b = 1.0; marker.color.a = 1.0; //blue color
+					marker.points.erase(marker.points.begin(), marker.points.end());
+					p.x = 0; p.y = 0; p.z = 0; 
+					marker.points.push_back(p);
+					
+					if (sign > 0 )
+					{
+					  p.x = 0; p.y = 0; p.z = 1 * axis_dimension;  
+					}
+					else 
+					{
+					  p.x = 0; p.y = 0; p.z = 1 * -axis_dimension;
+					}
+					 
+					marker.points.push_back(p);
+					marker_array.markers.push_back(marker);
+				}
+				
+				}
+				
+
+
+		      neat_marker_publisher.publish(marker_array);
+		      return 1;
+
+
+		  }
+		
+template <typename T>
+	    int set_neat_visualization_marker_array_object_descriptor_vector( boost::shared_ptr<pcl::PointCloud<T> > object_view,
+										vector < boost::shared_ptr<pcl::PointCloud<T> > >  all_projected_views, 
+									        string object_frame_id, 
+										unsigned int TID , 
+										double largest_side, 
+										int sign,
+										vector <float> view_point_entropy,
+										string std_name_of_sorted_projected_plane
+										
+									    )
+	    {
+	      
+		std::string tracker_frame_id = "/perception/pipeline" + boost::lexical_cast<std::string>(TID) + "/tracker";
+		
+		visualization_msgs::MarkerArray marker_array; 
+		//geometry_msgs::Point p;
+		double duration =1000;
+		bool locked = true;
+		bool finish= true;
+		//float center_of_projected_cloud_x=0 , center_of_projected_cloud_y=0 , center_of_projected_cloud_z=0 ;
+		//geometry_msgs::Point center_of_projected_cloud;
+		//geometry_msgs::Vector3 dimensions;
+		//geometry_msgs::Point p;
+		// int view_i = 1;
+		
+		
+		
+		//////////////////////////// working with a dataset /////////////////////////////
+		geometry_msgs::Point center_of_boundingbox_cloud;
+		geometry_msgs::Vector3 dimensions;
+		geometry_msgs::Point p;
+		float center_of_gravity_cloud_x=0 , center_of_gravity_cloud_y=0 , center_of_gravity_cloud_z=0 ;
+		/* _________________________________
+		|                                 |
+		|   Draw  Point Cloud of object   |
+		|_________________________________| */
+	      
+		if (1)
+		{
+	  
+	    
+		  visualization_msgs::Marker marker;
+		  //marker.header.frame_id = object_frame_id;
+		  marker.header.stamp = ros::Time();		
+		  marker.frame_locked = locked;
+		  marker.header.frame_id = tracker_frame_id;
+
+		  marker.ns = "object view";
+		  marker.id = TID*100000000;
+		  marker.type = visualization_msgs::Marker::POINTS;
+		  marker.lifetime = Duration(duration);
+		  marker.action = visualization_msgs::Marker::ADD;
+		  marker.pose.position.x = 0;	marker.pose.position.y = 0;	marker.pose.position.z = 0;
+		  marker.pose.orientation.x = 0.0; marker.pose.orientation.y = 0.0; marker.pose.orientation.z = 0.0; marker.pose.orientation.w = 1.0;
+// 		  marker.color = cm->color(TID);
+		  marker.color.r = 0;
+		  marker.color.g = 0;
+		  marker.color.b = 0;
+		  marker.color.a = 1;
+		  
+		  marker.scale.x = 0.005; marker.scale.y = 0.005; marker.scale.z = 0.005; marker.color.a = 1;
+		  //marker.color.r = 1.0; marker.color.g = 1.0;	marker.color.b = 1.0; marker.color.a = 1.0; 
+		  
+		  for (size_t i=0; i< object_view->points.size(); i++)
+		  {
+		      p.x = object_view->points.at(i).x;
+		      p.y = object_view->points.at(i).y;
+		      p.z = object_view->points.at(i).z;
+		      
+		      marker.points.push_back(p);
+		      center_of_gravity_cloud_x += p.x;
+		      center_of_gravity_cloud_y += p.y;
+		      center_of_gravity_cloud_z += p.z;
+		  }
+
+		  marker_array.markers.push_back(marker);
+		  
+// 		  center_of_gravity_cloud.x= center_of_gravity_cloud_x/object_view->points.size();
+// 		  center_of_gravity_cloud.y= center_of_gravity_cloud_y/object_view->points.size();
+// 		  center_of_gravity_cloud.z= center_of_gravity_cloud_z/object_view->points.size();
+			    
+		}    
+			    
+			    
+		
+		 /* _________________________________
+	      	   |                                 |
+	      	   |          DRAW BB WIREFRAME      |
+	      	   |_________________________________| */
+	      	if (1)
+	      	{
+	      		visualization_msgs::Marker marker;
+	      		marker.header.frame_id = tracker_frame_id;
+	      		marker.header.stamp = ros::Time();
+	      
+	      		marker.ns = "wireframe";
+	      		marker.id = TID*10000;
+	      		marker.frame_locked = locked;
+	      		marker.type = visualization_msgs::Marker::LINE_LIST;
+	      		//if (finish)
+	      		//marker.action = visualization_msgs::Marker::DELETE;
+	      		//else
+	      		marker.action = visualization_msgs::Marker::ADD;
+	      		marker.lifetime = Duration(duration);
+	      
+			compute_bounding_box_dimensions(object_view, dimensions);
+			center_of_boundingbox_cloud.x=dimensions.x/2;
+			center_of_boundingbox_cloud.y=dimensions.y/2;
+			center_of_boundingbox_cloud.z=dimensions.z/2;
+
+			marker.pose.position = center_of_boundingbox_cloud;	/*marker.pose.position.y = 0;	marker.pose.position.z = 0;*/
+			marker.pose.orientation.x = 0.0; marker.pose.orientation.y = 0.0; marker.pose.orientation.z = 0.0; marker.pose.orientation.w = 1.0;
+			    				
+			
+	      		marker.scale.x = 0.005; 
+	      		double x = dimensions.x/2; 
+	      		double y = dimensions.y/2; 
+	      		double z = dimensions.z/2; 
+	      
+	      		marker.color = cm->color(TID);
+	      		marker.color.r = 0.5;
+	      		marker.color.g = 0.5;
+	      		marker.color.b = 0.5;
+			marker.color.a = 0.1;
+	      		//marker
+	      		if (finish)
+	      		{
+	      			marker.color.r = 0.1;
+	      			marker.color.g = 0.1;
+	      			marker.color.b = 0.1;
+	      		}
+
+	      		geometry_msgs::Point p;
+	      		p.x =  x; p.y =  y; p.z =  z; marker.points.push_back(p);
+	      		p.x = -x; p.y =  y; p.z =  z; marker.points.push_back(p);
+	      		p.x =  x; p.y =  y; p.z = -z; marker.points.push_back(p);
+	      		p.x = -x; p.y =  y; p.z = -z; marker.points.push_back(p);
+	      		p.x =  x; p.y =  y; p.z = -z; marker.points.push_back(p);
+	      		p.x =  x; p.y =  y; p.z =  z; marker.points.push_back(p);
+	      		p.x = -x; p.y =  y; p.z = -z; marker.points.push_back(p);
+	      		p.x = -x; p.y =  y; p.z =  z; marker.points.push_back(p);
+	      
+	      		p.x =  x; p.y =  -y; p.z =  z; marker.points.push_back(p);
+	      		p.x = -x; p.y =  -y; p.z =  z; marker.points.push_back(p);
+	      		p.x =  x; p.y =  -y; p.z = -z; marker.points.push_back(p);
+	      		p.x = -x; p.y =  -y; p.z = -z; marker.points.push_back(p);
+	      		p.x =  x; p.y =  -y; p.z = -z; marker.points.push_back(p);
+	      		p.x =  x; p.y =  -y; p.z =  z; marker.points.push_back(p);
+	      		p.x = -x; p.y =  -y; p.z = -z; marker.points.push_back(p);
+	      		p.x = -x; p.y =  -y; p.z =  z; marker.points.push_back(p);
+	      
+	      		p.x =  x; p.y =  y; p.z =  z; marker.points.push_back(p);
+	      		p.x =  x; p.y = -y; p.z =  z; marker.points.push_back(p);
+	      		p.x =  x; p.y =  y; p.z = -z; marker.points.push_back(p);
+	      		p.x =  x; p.y = -y; p.z = -z; marker.points.push_back(p);
+	      
+	      		p.x = -x; p.y =  y; p.z =  z; marker.points.push_back(p);
+	      		p.x = -x; p.y = -y; p.z =  z; marker.points.push_back(p);
+	      		p.x = -x; p.y =  y; p.z = -z; marker.points.push_back(p);
+	      		p.x = -x; p.y = -y; p.z = -z; marker.points.push_back(p);
+	      
+	      		marker_array.markers.push_back(marker);
+	      	}
+	      
+	      
+	      	/* _________________________________
+	      	   |                                 |
+	      	   |             DRAW BBOX           |
+	      	   |_________________________________| */
+	      	if (1)
+	      	{
+	      		visualization_msgs::Marker marker;
+	      		marker.header.frame_id = tracker_frame_id;
+	      		marker.header.stamp = ros::Time();
+	      
+	      		marker.ns = "boundingbox";
+	      		marker.id = TID*200;
+	      		marker.type = visualization_msgs::Marker::CUBE;
+	      		marker.frame_locked = locked;
+	      		//if (finish)
+	      		//marker.action = visualization_msgs::Marker::DELETE;
+	      		//else
+	      		marker.action = visualization_msgs::Marker::ADD;
+	      		marker.lifetime = Duration(duration);
+	      
+			marker.pose.position = center_of_boundingbox_cloud;
+			marker.pose.orientation.x = 0.0; marker.pose.orientation.y = 0.0; marker.pose.orientation.z = 0.0; marker.pose.orientation.w = 1.0;
+	      		
+			marker.scale.x = dimensions.x; 
+	      		marker.scale.y = dimensions.y; 
+	      		marker.scale.z = dimensions.z; 
+	      
+
+			marker.color = cm->color(TID);
+			marker.color.a = 0.1;
+			
+			if (finish)
+	      		{
+	      			marker.color.r = 0.9;
+	      			marker.color.g = 0.0;
+	      			marker.color.b = 0.0;
+	      		}
+	      
+	      		marker_array.markers.push_back(marker);
+	      	}
+		
+		
+		
+		
+		for (int view_i = 0; view_i< all_projected_views.size(); view_i++)			
+		{
+			geometry_msgs::Point center_of_projected_cloud;
+			geometry_msgs::Vector3 dimensions;
+			geometry_msgs::Point p;
+			float center_of_projected_cloud_x=0 , center_of_projected_cloud_y=0 , center_of_projected_cloud_z=0 ;
+			/* _________________________________
+			  |                                 |
+			  |   Draw Projected Point Cloud    |
+			  |_________________________________| */
+			if (1)
+			{
+		    
+		      
+			    visualization_msgs::Marker marker;
+			    //marker.header.frame_id = object_frame_id;
+			    marker.header.stamp = ros::Time();		
+			    marker.frame_locked = locked;
+			    marker.header.frame_id = tracker_frame_id;
+
+			    marker.ns = "projected views";
+			    marker.id = TID*32+view_i;
+			    marker.type = visualization_msgs::Marker::POINTS;
+			    marker.lifetime = Duration(duration);
+			    marker.action = visualization_msgs::Marker::ADD;
+			    marker.pose.position.x = 0;	marker.pose.position.y = 0;	marker.pose.position.z = 0;
+			    marker.pose.orientation.x = 0.0; marker.pose.orientation.y = 0.0; marker.pose.orientation.z = 0.0; marker.pose.orientation.w = 1.0;
+			    marker.color = cm->color(TID);
+			    marker.scale.x = 0.005; marker.scale.y = 0.005; marker.scale.z = 0.005; marker.color.a = 1;
+			    //marker.color.r = 1.0; marker.color.g = 1.0;	marker.color.b = 1.0; marker.color.a = 1.0; 
+			    
+			    //marker.points.erase(marker.points.begin(), marker.points.end());
+			    geometry_msgs::Point p;
+
+			    for (size_t i=0; i<all_projected_views.at(view_i)-> points.size(); i++)
+			    {
+// 				p.x = sign * all_projected_views.at(view_i)->points.at(i).x;
+// 				p.y = sign * all_projected_views.at(view_i)->points.at(i).y;
+// 				p.z = all_projected_views.at(view_i)->points.at(i).z;
+// 				marker.points.push_back(p);
+
+				all_projected_views.at(view_i)->points.at(i).x = sign * all_projected_views.at(view_i)->points.at(i).x;
+				all_projected_views.at(view_i)->points.at(i).y = sign * all_projected_views.at(view_i)->points.at(i).y;
+				p.x = all_projected_views.at(view_i)->points.at(i).x;
+				p.y = all_projected_views.at(view_i)->points.at(i).y;
+				p.z = all_projected_views.at(view_i)->points.at(i).z;
+				
+				marker.points.push_back(p);
+				center_of_projected_cloud_x += p.x;
+				center_of_projected_cloud_y += p.y;
+				center_of_projected_cloud_z += p.z;
+			    }
+
+			    marker_array.markers.push_back(marker);
+			    
+			    center_of_projected_cloud.x= center_of_projected_cloud_x/all_projected_views.at(view_i)->points.size();
+			    center_of_projected_cloud.y= center_of_projected_cloud_y/all_projected_views.at(view_i)->points.size();
+			    center_of_projected_cloud.z= center_of_projected_cloud_z/all_projected_views.at(view_i)->points.size();
+			    
+			}
+			
+			  /* _________________________________
+			    |                                 |
+			    |           Draw Plane            |
+			    |_________________________________| */
+			  if (1)
+			  {
+				  visualization_msgs::Marker marker;
+				  marker.header.frame_id = tracker_frame_id;
+				  marker.header.stamp = ros::Time();
+			
+				  marker.ns = "Plane";
+				  marker.id = TID*33+view_i;
+				  marker.type = visualization_msgs::Marker::CUBE;
+				  marker.frame_locked = locked;
+				  //if (finish)
+				  //marker.action = visualization_msgs::Marker::DELETE;
+				  //else
+				  marker.action = visualization_msgs::Marker::ADD;
+				  marker.lifetime = Duration(duration);
+			
+				  marker.pose.position =center_of_projected_cloud;
+				  //compute_bounding_box_dimensions(all_projected_views.at(view_i), dimensions);
+				  //ROS_INFO("Visuzlize box dimensions (x, y, z) = (%f, %f, %f) ", dimensions.x, dimensions.y, dimensions.z);
+				  
+				  if (view_i == 0)
+				  {
+				  	marker.scale.x = 0.0001;
+					marker.scale.y = largest_side; 
+					marker.scale.z = largest_side;
+					
+					dimensions.x = 0.0001; 
+					dimensions.y = largest_side; 
+					dimensions.z = largest_side;
+				  }
+				  else if (view_i ==1)
+				  {
+					marker.scale.x = largest_side; 
+					marker.scale.y =  0.0001;
+					marker.scale.z = largest_side; 
+					
+					dimensions.x = largest_side ; 
+					dimensions.y = 0.0001;
+					dimensions.z = largest_side; 
+			
+				  } 
+				  else
+				  {
+				      marker.scale.x = largest_side; 
+				      marker.scale.y = largest_side; 
+				      marker.scale.z = 0.0001;
+				      
+				      dimensions.x = largest_side; 
+				      dimensions.y = largest_side; 
+				      dimensions.z = 0.0001;
+				  }
+				  			  
+				  marker.color = cm->color(TID);		  
+				  marker.color.a = 0.3;
+						    
+		
+				  marker_array.markers.push_back(marker);
+			  }
+			  
+
+				  
+				  /* _________________________________
+				    |                                 |
+				    |         DRAW WIREFRAME          |
+				    |_________________________________| */
+				  if (1)
+				  {
+				    
+					  visualization_msgs::Marker marker;
+					  marker.header.frame_id = tracker_frame_id;
+					  marker.header.stamp = ros::Time();
+				
+					  marker.ns = "wireframe";
+					  marker.id = TID*44+view_i;
+					  marker.frame_locked = locked;
+					  marker.type = visualization_msgs::Marker::LINE_LIST;
+					  //if (finish)
+					  //marker.action = visualization_msgs::Marker::DELETE;
+					  //else
+					  marker.action = visualization_msgs::Marker::ADD;
+					  marker.lifetime = Duration(duration);
+							  
+					  marker.pose.position =center_of_projected_cloud;
+
+					  //marker.pose = _tracked_object_msg.bounding_box.pose_stamped.pose;
+				
+					  marker.scale.x = 0.003; 
+					  
+				
+					  marker.color.a = 0.5;
+					  marker.color.r = 0.5;
+					  marker.color.g = 0.5;
+					  marker.color.b = 0.5;
+					  //marker
+					  if (finish)
+					  {
+						  marker.color.r = 0.1;
+						  marker.color.g = 0.1;
+						  marker.color.b = 0.1;
+					  }
+
+					  
+					  
+					double x = dimensions.x/2; 
+					double y = dimensions.y/2; 
+					double z = dimensions.z/2; 
+// 					double x = largest_side/2; 
+// 					double y = largest_side/2; 
+// 					double z = largest_side/2; 
+					
+
+					    
+					int k =number_of_bins;
+					
+					double interval_x = dimensions.x/k; 
+					double interval_y = dimensions.y/k; 
+					double interval_z = dimensions.z/k; 
+
+// 					double interval_x = largest_side/k; 
+// 					double interval_y = largest_side/k; 
+// 					double interval_z = largest_side/k; 
+				    
+					if (view_i == 0)//for x
+					{
+					  //ROS_INFO("YOZ WIREFRAME plane size (x, y, z) = (%f, %f, %f) ", x, y, z);   
+					  // Page YOZ for Y axis
+					      for (int i=0; i<= k ; i++)  
+					      {	
+						    p.x = x; p.y = -y + i*interval_y; p.z = -z; 
+						    marker.points.push_back(p);
+						    p.x = x; p.y = -y + i*interval_y ; p.z =  z; 
+						    marker.points.push_back(p);	
+					      }
+					      
+					      // Page YOZ for Z axis
+					      for (int i=0; i<= k ; i++)  
+					      {
+						    p.x = x; p.y = y; p.z = -z + i*interval_z; 
+						    marker.points.push_back(p);
+						    p.x = x; p.y = -y ; p.z = -z + i*interval_z; ; 
+						    marker.points.push_back(p);
+					      }
+					      marker_array.markers.push_back(marker);
+					      
+					}
+					
+					else if (view_i == 1)//for y
+					{
+					  //ROS_INFO("XOZ WIREFRAME plane size (x, y, z) = (%f, %f, %f) ", x, y, z);   
+
+					      // Page XOZ for X axis
+					      for (int i=0; i<= k ; i++)  
+					      {	
+						    p.x = -x+ i*interval_x; p.y = y; p.z = -z; 
+						    marker.points.push_back(p);
+						    p.x = -x+ i*interval_x; p.y = y ; p.z =  z; 
+						    marker.points.push_back(p);	
+					      }
+					      
+					      // Page XOZ for Z axis
+					      for (int i=0; i<= k ; i++)  
+					      {
+						    p.x = x; p.y = y; p.z = -z + i*interval_z; 
+						    marker.points.push_back(p);
+						    p.x = -x; p.y = y ; p.z = -z + i*interval_z; ; 
+						    marker.points.push_back(p);
+					      }
+					      marker_array.markers.push_back(marker);
+
+					}
+					
+					else //for z
+					{
+					  //ROS_INFO("XOY WIREFRAME plane size (x, y, z) = (%f, %f, %f) ", x, y, z);   
+					      // Page XOY for X axis
+					      for (int i=0; i<= k ; i++)  
+					      {	
+						    p.x = -x+ i*interval_x; p.y = -y; p.z = z; 
+						    marker.points.push_back(p);
+						    p.x = -x+ i*interval_x; p.y = y ; p.z = z; 
+						    marker.points.push_back(p);	
+					      }
+					      
+					      // Page XOY for Y axis
+					      for (int i=0; i<= k ; i++)  
+					      {	
+						    p.x = -x; p.y = -y + i*interval_y; p.z = z; 
+						    marker.points.push_back(p);
+						    p.x = x; p.y = -y + i*interval_y ; p.z = z; 
+						    marker.points.push_back(p);	
+					      }
+					      marker_array.markers.push_back(marker);
+					      
+					}
+	      		      } 
+	      		     
+
+				
+	      		     
+				    /* _______________________
+				    |                         |
+				    |         histogram       |
+				    |_________________________| */
+				  if (1)
+				  {
+				    
+				        visualization_msgs::Marker marker;
+					//marker.header.frame_id = object_frame_id;
+					marker.header.stamp = ros::Time();		
+					marker.frame_locked = locked;
+					marker.header.frame_id = tracker_frame_id;
+
+					marker.ns = "histogram of projected views";
+					marker.id = TID*55+view_i;
+					marker.type = visualization_msgs::Marker::POINTS;
+					marker.lifetime = Duration(duration);
+					marker.action = visualization_msgs::Marker::ADD;
+// 					marker.pose.position.x = 0; marker.pose.position.y = 0;	marker.pose.position.z = 0;
+// 					marker.pose.orientation.x = 0.0; marker.pose.orientation.y = 0.0; marker.pose.orientation.z = 0.0; marker.pose.orientation.w = 1.0;
+					marker.color = cm->color(TID);
+					marker.scale.x = 0.01; marker.scale.y = 0.01; marker.scale.z = 0.01; marker.color.a = 1;
+					marker.color.r = 0.0; marker.color.g = 0.0;	marker.color.b = 1.0; marker.color.a = 1.0; 
+										  
+					  
+					double x = dimensions.x/2; 
+					double y = dimensions.y/2; 
+					double z = dimensions.z/2; 
+					    
+					int k =number_of_bins;
+					
+					double interval_x = dimensions.x/k; 
+					double interval_y = dimensions.y/k; 
+					double interval_z = dimensions.z/k; 
+
+// 					double interval_x = largest_side/k; 
+// 					double interval_y = largest_side/k; 
+// 					double interval_z = largest_side/k; 
+				    
+					if (view_i == 0)//for x
+					{
+					  //ROS_INFO("YOZ histogram");   
+					  for (int i=0; i<all_projected_views.at(view_i)-> points.size(); i++)
+					  {
+						geometry_msgs::Point p;
+						//p.x = all_projected_views.at(view_i)->points.at(i).x + x;
+						// 1/2 dimention is added to the real data to put all the data in positive scale between [0,2y][0-2z]
+						p.y = all_projected_views.at(view_i)->points.at(i).y + sign * y;
+						//p.y = all_projected_views.at(view_i)->points.at(i).y + y;
+						p.z = all_projected_views.at(view_i)->points.at(i).z + z;
+						//ROS_INFO("YOZ: P(y).(%i)= %f --- dy= %f", all_projected_views.at(view_i)->points.at(i).y, y );
+						//ROS_INFO("(trunc(p.y / interval_y)= %f and (trunc(p.z / interval_z) =%f", trunc(p.y / interval_y), trunc(p.z / interval_z));
+						if ((trunc(p.y / interval_y) == 0.0) and ((trunc(p.z / interval_z) == 0.0)))
+						{
+						    geometry_msgs::Point p;
+						    p.x=all_projected_views.at(view_i)->points.at(i).x;
+						    p.y=all_projected_views.at(view_i)->points.at(i).y;
+						    p.z=all_projected_views.at(view_i)->points.at(i).z;
+						    marker.points.push_back(p);
+			
+// 						    p.x=all_projected_views.at(view_i)->points.at(i).x;
+// 						    p.y= - all_projected_views.at(view_i)->points.at(i).y;
+// 						    p.z=all_projected_views.at(view_i)->points.at(i).z;
+// 						    marker.points.push_back(p);
+// 						    
+						}
+					    }
+					    marker_array.markers.push_back(marker);
+					      
+					}
+					
+					else if (view_i == 1)//for y
+					{
+					  //ROS_INFO("XOZ histogram");   
+					  for (int i=0; i<all_projected_views.at(view_i)-> points.size(); i++)
+					  {					    
+						geometry_msgs::Point p;
+						// 1/2 dimention is added to the real data to put all the data in positive scale between [0,2x][0-2z]
+						p.x = all_projected_views.at(view_i)->points.at(i).x + sign * x;
+						//p.x = all_projected_views.at(view_i)->points.at(i).x + x;
+						//p.y = all_projected_views.at(view_i)->points.at(i).y;
+						p.z = all_projected_views.at(view_i)->points.at(i).z + z;
+						//ROS_INFO("XOZ: P(x).(%i)= %f --- dx= %f", all_projected_views.at(view_i)->points.at(i).x, x );
+						//ROS_INFO("(trunc(p.x / interval_x)= %f and (trunc(p.z / interval_z) =%f", trunc(p.x / interval_x), trunc(p.z / interval_z));
+						
+						if ((trunc(p.x / interval_x) == 0.0) and ((trunc(p.z / interval_z) == 0.0)))
+						{
+						    geometry_msgs::Point p;
+						    p.x=all_projected_views.at(view_i)->points.at(i).x;
+						    p.y=all_projected_views.at(view_i)->points.at(i).y;
+						    p.z=all_projected_views.at(view_i)->points.at(i).z;
+						    marker.points.push_back(p);
+						    
+// 						    p.x= - all_projected_views.at(view_i)->points.at(i).x;
+// 						    p.y=all_projected_views.at(view_i)->points.at(i).y;
+// 						    p.z=all_projected_views.at(view_i)->points.at(i).z;
+// 						    marker.points.push_back(p);
+						}
+					    }
+					    marker_array.markers.push_back(marker);
+
+					}
+					
+					else //for z
+					{
+					  //ROS_INFO("XOY histogram");   					       
+					  for (int i=0; i<all_projected_views.at(view_i)-> points.size(); i++)
+					  {
+						geometry_msgs::Point p;
+						// 1/2 dimention is added to the real data to put all the data in positive scale between [0,2x][0-2y]
+						p.x = all_projected_views.at(view_i)->points.at(i).x + sign * x;						
+						p.y = all_projected_views.at(view_i)->points.at(i).y + sign * y;
+						//p.x = all_projected_views.at(view_i)->points.at(i).x +  x;						
+						//p.y = all_projected_views.at(view_i)->points.at(i).y +  y;
+						//p.z = all_projected_views.at(view_i)->points.at(i).z + z;
+						//ROS_INFO("XOY: P(x).(%i)= %f --- dx= %f", all_projected_views.at(view_i)->points.at(i).x, x );
+						//ROS_INFO("(trunc(p.x / interval_x)= %f and (trunc(p.y / interval_y) =%f", trunc(p.x / interval_x), trunc(p.y / interval_y));
+						if ((trunc(p.x / interval_x) == 0.0) and ((trunc(p.y / interval_y) == 0.0)))
+						{
+						    geometry_msgs::Point p;
+						    p.x=all_projected_views.at(view_i)->points.at(i).x;
+						    p.y=all_projected_views.at(view_i)->points.at(i).y;
+						    p.z=all_projected_views.at(view_i)->points.at(i).z;
+						    marker.points.push_back(p);
+						    
+// 						    p.x= - all_projected_views.at(view_i)->points.at(i).x;
+// 						    p.y= - all_projected_views.at(view_i)->points.at(i).y;
+// 						    p.z=all_projected_views.at(view_i)->points.at(i).z;
+// 						    marker.points.push_back(p);
+						}
+					    }
+					    marker_array.markers.push_back(marker);
+					      
+					}
+	      		      } 
+
+	      		      
+	      		      /* _________________________________
+				|                                 |
+				|         DRAW TEXT INFO          |
+				|_________________________________| */
+				if (1)
+				{
+					
+					visualization_msgs::Marker marker;
+					//marker.header.frame_id = object_frame_id;
+					marker.header.stamp = ros::Time();		
+					marker.frame_locked = locked;
+					marker.header.frame_id = tracker_frame_id;
+
+					marker.pose.position =center_of_boundingbox_cloud;
+
+					marker.ns = "sign";
+					marker.id = TID*10+view_i;
+					marker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+					marker.lifetime = Duration(duration);
+					marker.action = visualization_msgs::Marker::ADD;
+					//marker.pose.position.x = 0 + marker.pose.position.x*0.9 + 0;
+					//marker.pose.position.y = 0 + marker.pose.position.y*0.9 + 0.1;
+					marker.pose.position.z = largest_side + 0.15;
+					marker.scale.z = 0.02; 
+					marker.color.r  = 1; marker.color.g  = 0; marker.color.b  = 0; marker.color.a = 1;
+					marker.text = "Sign = " + boost::lexical_cast<std::string>(sign);
+					marker_array.markers.push_back(marker);
+				}
+
+				if (1)
+				{
+					
+					visualization_msgs::Marker marker;
+					//marker.header.frame_id = object_frame_id;
+					marker.header.stamp = ros::Time();		
+					marker.frame_locked = locked;
+					marker.header.frame_id = tracker_frame_id;
+
+					marker.pose.position =center_of_projected_cloud;
+
+					marker.ns = "entropy";
+					marker.id = TID*100+view_i;
+					marker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+					marker.lifetime = Duration(duration);
+					marker.action = visualization_msgs::Marker::ADD;
+					//marker.pose.position.x = 0 + marker.pose.position.x*0.9 + 0;
+					//marker.pose.position.y = 0 + marker.pose.position.y*0.9 + 0.1;
+					marker.pose.position.z = largest_side + 0.25;
+					marker.scale.z = 0.02; 
+					marker.color.r  = 1; marker.color.g  = 0; marker.color.b  = 0; marker.color.a = 1;
+					marker.text = "H(YoZ) = " + boost::lexical_cast<std::string>(view_point_entropy.at(0))+
+						      "\nH(XoZ) = " + boost::lexical_cast<std::string>(view_point_entropy.at(1))+
+						      "\nH(XoY) = " + boost::lexical_cast<std::string>(view_point_entropy.at(2));
+					marker_array.markers.push_back(marker);
+				}
+
+				if (1)
+				{
+					
+					visualization_msgs::Marker marker;
+					//marker.header.frame_id = object_frame_id;
+					marker.header.stamp = ros::Time();		
+					marker.frame_locked = locked;
+					marker.header.frame_id = tracker_frame_id;
+
+					marker.pose.position =center_of_projected_cloud;
+
+					marker.ns = "sorted projections";
+					marker.id = TID*200+view_i;
+					marker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+					marker.lifetime = Duration(duration);
+					marker.action = visualization_msgs::Marker::ADD;
+					//marker.pose.position.x = 0 + marker.pose.position.x*0.9 + 0;
+					//marker.pose.position.y = 0 + marker.pose.position.y*0.9 + 0.1;
+					marker.pose.position.z = largest_side + 0.3;
+					marker.scale.z = 0.02; 
+					marker.color.r  = 0; marker.color.g  = 0; marker.color.b  = 0; marker.color.a = 1;
+					marker.text = std_name_of_sorted_projected_plane;
+					marker_array.markers.push_back(marker);
+				}
+
+				
+				
+			      /* _______________________________
+			      |                                 |
+			      |           DRAW XYZ AXES         |
+			      |_________________________________| */
+				if (1)
+				{	
+					visualization_msgs::Marker marker;
+					double axis_dimension = sign * 0.2;
+					marker.header.frame_id = tracker_frame_id;
+					marker.header.stamp = ros::Time();
+
+					marker.frame_locked = locked;
+					marker.type = visualization_msgs::Marker::LINE_STRIP;
+					marker.action = visualization_msgs::Marker::ADD;
+					marker.lifetime = Duration(duration);
+
+					marker.pose.position =center_of_projected_cloud;
+
+					marker.scale.x = 0.01; marker.scale.y = 0.5; marker.scale.z = 4;
+
+					//X axis
+					marker.ns = "axes_x";
+					marker.id = TID*1780+view_i;;
+					marker.color.r = 1.0; marker.color.g = 0.0;	marker.color.b = 0.0; marker.color.a = 1.0; //red color
+					marker.points.erase(marker.points.begin(), marker.points.end());
+					p.x = 0; p.y = 0; p.z = 0; 
+					marker.points.push_back(p);
+					p.x = 1 * axis_dimension; p.y = 0; p.z = 0; 
+					marker.points.push_back(p);
+					marker_array.markers.push_back(marker);
+
+					//Y axis
+					marker.ns = "axes_y";
+					marker.id = TID*10+view_i;
+					marker.color.r = 0.0; marker.color.g = 1.0;	marker.color.b = 0.0; marker.color.a = 1.0; //green color
+					marker.points.erase(marker.points.begin(), marker.points.end());
+					p.x = 0; p.y = 0; p.z = 0; 
+					marker.points.push_back(p);
+					p.x = 0; p.y = 1 * axis_dimension; p.z = 0; 
+					marker.points.push_back(p);
+					marker_array.markers.push_back(marker);
+
+					//Z axis
+					marker.ns = "axes_z";
+					marker.id = TID*10+view_i;
+					marker.color.r = 0.0; marker.color.g = 0.0;	marker.color.b = 1.0; marker.color.a = 1.0; //blue color
+					marker.points.erase(marker.points.begin(), marker.points.end());
+					p.x = 0; p.y = 0; p.z = 0; 
+					marker.points.push_back(p);
+					
+					if (sign > 0 )
+					{
+					  p.x = 0; p.y = 0; p.z = 1 * axis_dimension;  
+					}
+					else 
+					{
+					  p.x = 0; p.y = 0; p.z = 1 * -axis_dimension;
+					}
+					 
+					marker.points.push_back(p);
+					marker_array.markers.push_back(marker);
+					ROS_INFO("axes added...");
+				}
+				
+				}
+				
+
+		      neat_marker_publisher.publish(marker_array);
+		      return 1;
+		  }
+		
+	    	    
+	    	    
+	    	    
+	    	    
+	    template <typename T>
+	    int set_neat_visualization_marker_array_object_descriptor( boost::shared_ptr<pcl::PointCloud<T> > all_projected_views, string object_frame_id, unsigned int TID )
+	      {
+
+		//STEP 1: need to get the position of the object so we can draw
+		//text nearby
+		//   tf::StampedTransform stf; //the transform
+		//   //std::string tracker_frame_id =  msg->header.frame_id;
+		//   std::string tracker_frame_id = "/perception/pipeline" + boost::lexical_cast<std::string>(msg->track_id) + "/tracker";
+
+		std::string tracker_frame_id = "/perception/pipeline" + boost::lexical_cast<std::string>(TID) + "/tracker";
+// 		ROS_INFO ("set_neat_visualization_marker_array_object_descriptor: object_frame_id = %s", object_frame_id.c_str());
+		
+		visualization_msgs::MarkerArray marker_array; 
+// 		geometry_msgs::Point p;
+		double duration = 5;
+		bool locked = true;
+		bool finish= true;
+		float center_of_projected_cloud_x=0 , center_of_projected_cloud_y=0 , center_of_projected_cloud_z=0 ;
+		geometry_msgs::Point center_of_projected_cloud;
+		geometry_msgs::Vector3 dimensions;
+		geometry_msgs::Point p;
+
+		/* _________________________________
+	      	   |                                 |
+	      	   |   Draw Projected Point Cloud    |
+	      	   |_________________________________| */
+	      	if (1)
+	      	{
+		      visualization_msgs::Marker marker;
+		      //marker.header.frame_id = object_frame_id;
+		      marker.header.stamp = ros::Time();		
+		      marker.frame_locked = locked;
+		      marker.header.frame_id = tracker_frame_id;
+
+		      marker.ns = "projected views";
+		      marker.id = TID;
+		      marker.type = visualization_msgs::Marker::POINTS;
+		      marker.lifetime = Duration(duration);
+		      marker.action = visualization_msgs::Marker::ADD;
+		      marker.pose.position.x = 0;	marker.pose.position.y = 0;	marker.pose.position.z = 0;
+		      marker.pose.orientation.x = 0.0; marker.pose.orientation.y = 0.0; marker.pose.orientation.z = 0.0; marker.pose.orientation.w = 1.0;
+		      marker.color = cm->color(TID);
+		      marker.scale.x = 0.005; marker.scale.y = 0.005; marker.scale.z = 0.005; marker.color.a = 1;
+		      //marker.color.r = 1.0; marker.color.g = 1.0;	marker.color.b = 1.0; marker.color.a = 1.0; 
+		      
+		      //marker.points.erase(marker.points.begin(), marker.points.end());
+		      geometry_msgs::Point p;
+
+		      for (size_t i=0; i<all_projected_views->points.size(); i++)
+		      {
+			  p.x = all_projected_views->points.at(i).x;
+			  p.y = all_projected_views->points.at(i).y;
+			  p.z = all_projected_views->points.at(i).z;
+			  marker.points.push_back(p);
+			  center_of_projected_cloud_x += p.x;
+			  center_of_projected_cloud_y += p.y;
+			  center_of_projected_cloud_z += p.z;
+		      }
+		      center_of_projected_cloud.x= center_of_projected_cloud_x/all_projected_views->points.size();
+		      center_of_projected_cloud.y= center_of_projected_cloud_y/all_projected_views->points.size();
+		      center_of_projected_cloud.z= center_of_projected_cloud_z/all_projected_views->points.size();
+		      
+		      marker_array.markers.push_back(marker);
+		}
+	      
+		      /* _________________________________
+			|                                 |
+			|             DRAW BBOX           |
+			|_________________________________| */
+		      if (1)
+		      {
+			      visualization_msgs::Marker marker;
+			      marker.header.frame_id = tracker_frame_id;
+			      marker.header.stamp = ros::Time();
+		    
+			      marker.ns = "boundingbox";
+			      marker.id = TID;
+			      marker.type = visualization_msgs::Marker::CUBE;
+			      marker.frame_locked = locked;
+			      //if (finish)
+			      //marker.action = visualization_msgs::Marker::DELETE;
+			      //else
+			      marker.action = visualization_msgs::Marker::ADD;
+			      marker.lifetime = Duration(5);
+		    
+			      
+			      marker.pose.position =center_of_projected_cloud;
+			      compute_bounding_box_dimensions(all_projected_views, dimensions);
+			      ROS_INFO("box dimensions (x, y, z) = (%f, %f, %f) ", dimensions.x, dimensions.y, dimensions.z);
+		      
+			      marker.scale.x = dimensions.x+0.0; 
+			      marker.scale.y = dimensions.y+0.2; 
+			      marker.scale.z = dimensions.z+0.02; 
+		    
+			      marker.color = cm->color(TID);
+						
+			      marker.color.a = 0.3;
+			      marker.color.r = 0.0;
+			      marker.color.g = 0.5;
+			      marker.color.b = 0.5;
+			      if (finish)
+			      {
+				      marker.color.r = 0.9;
+				      marker.color.g = 0.0;
+				      marker.color.b = 0.0;
+			      }
+		    
+			      marker_array.markers.push_back(marker);
+		      }
+		      /* _________________________________
+			|                                 |
+			|             DRAW WIREFRAME      |
+			|_________________________________| */
+		      if (1)
+		      {
+			
+			      visualization_msgs::Marker marker;
+			      marker.header.frame_id = tracker_frame_id;
+			      marker.header.stamp = ros::Time();
+		    
+			      marker.ns = "wireframe";
+			      marker.id = TID;
+			      marker.frame_locked = locked;
+			      marker.type = visualization_msgs::Marker::LINE_LIST;
+			      //if (finish)
+			      //marker.action = visualization_msgs::Marker::DELETE;
+			      //else
+			      marker.action = visualization_msgs::Marker::ADD;
+			      marker.lifetime = Duration(5);
+		    			      
+			      marker.pose.position =center_of_projected_cloud;
+
+			      //marker.pose = _tracked_object_msg.bounding_box.pose_stamped.pose;
+		    
+			      marker.scale.x = 0.005; 
+			      double x = dimensions.x/2; 
+			      double y = dimensions.y/2; 
+			      double z = dimensions.z/2; 
+		    
+			      marker.color.a = 0.5;
+			      marker.color.r = 0.5;
+			      marker.color.g = 0.5;
+			      marker.color.b = 0.5;
+			      //marker
+			      if (finish)
+			      {
+				      marker.color.r = 0.1;
+				      marker.color.g = 0.1;
+				      marker.color.b = 0.1;
+			      }
+
+			      //outside lines
+			      			      
+			      p.x =  x; p.y =  y; p.z = -z; marker.points.push_back(p);
+			      p.x =  x; p.y =  y; p.z =  z; marker.points.push_back(p);
+			      p.x =  x; p.y =  -y; p.z = -z; marker.points.push_back(p);
+			      p.x =  x; p.y =  -y; p.z =  z; marker.points.push_back(p);
+			      p.x =  x; p.y =  -y; p.z = z; marker.points.push_back(p);
+			      p.x =  x; p.y =  y; p.z =  z; marker.points.push_back(p);
+			      p.x =  x; p.y =  -y; p.z = -z; marker.points.push_back(p);
+			      p.x =  x; p.y =  y; p.z =  -z; marker.points.push_back(p);
+			      
+			      
+			      //inside	lines		      
+			      p.x =  x; p.y =  y/2; p.z = -z; marker.points.push_back(p);
+			      p.x =  x; p.y =  y/2; p.z =  z; marker.points.push_back(p);			      
+			      p.x =  x; p.y =  0 ; p.z = -z; marker.points.push_back(p);
+			      p.x =  x; p.y =  0; p.z =  z; marker.points.push_back(p);
+			      p.x =  x; p.y =  -y/2; p.z = -z; marker.points.push_back(p);
+			      p.x =  x; p.y =  -y/2; p.z =  z; marker.points.push_back(p);
+			      
+			    
+			      p.x =  x; p.y =  -y; p.z = z/2; marker.points.push_back(p);
+			      p.x =  x; p.y =  y; p.z =  z/2; marker.points.push_back(p);	
+			      
+			      p.x =  x; p.y =  -y; p.z = 0; marker.points.push_back(p);
+			      p.x =  x; p.y =  y; p.z =  0; marker.points.push_back(p);	
+			     
+			      p.x =  x; p.y =  -y; p.z = -z/2; marker.points.push_back(p);
+			      p.x =  x; p.y =  y; p.z =  -z/2; marker.points.push_back(p);	
+			      
+			      
+			      
+			      marker_array.markers.push_back(marker);
+		      }
+	      
+	      	
+// 		/* _________________________________
+// 		    |                                 |
+// 		    |           DRAW XYZ AXES         |
+// 		    |_________________________________| */
+// 		if (1)
+// 		{	
+// 			visualization_msgs::Marker marker;
+// 			double axis_dimension = 0.9;
+// 			marker.header.frame_id = object_frame_id.c_str();
+// 			marker.header.stamp = ros::Time();
+// 
+// 			//marker.frame_locked = locked;
+// 			marker.type = visualization_msgs::Marker::LINE_STRIP;
+// 		      //  if (finish)
+// 		      //	  marker.action = visualization_msgs::Marker::DELETE;
+// 		      // else
+// 				marker.action = visualization_msgs::Marker::ADD;
+// 
+// 			marker.scale.x = 0.05; marker.scale.y = 0.5; marker.scale.z = 4;
+// 			marker.scale.x = 05; marker.scale.y = 0.5; marker.scale.z = 4; 
+// 			marker.lifetime = Duration(duration);
+// 
+// 			
+// 			//X axis
+// 			marker.ns = "axes_x";
+// 			marker.id = TID;
+// 			marker.color.r = 1.0; marker.color.g = 0.0;	marker.color.b = 0.0; marker.color.a = 1.0; //red color
+// 			marker.points.erase(marker.points.begin(), marker.points.end());
+// 			p.x = 0; p.y = 0; p.z = 0; marker.points.push_back(p);
+// 			p.x = 1 * axis_dimension; p.y = 0; p.z = 0; marker.points.push_back(p);
+// 			marker_array.markers.push_back(marker);
+// 
+// 			//Y axis
+// 			marker.ns = "axes_y";
+// 			marker.id = TID;
+// 			marker.color.r = 0.0; marker.color.g = 1.0;	marker.color.b = 0.0; marker.color.a = 1.0; //green color
+// 			marker.points.erase(marker.points.begin(), marker.points.end());
+// 			p.x = 0; p.y = 0; p.z = 0; marker.points.push_back(p);
+// 			p.x = 0; p.y = 1 * axis_dimension; p.z = 0; marker.points.push_back(p);
+// 			marker_array.markers.push_back(marker);
+// 
+// 			//Z axis
+// 			marker.ns = "axes_z";
+// 			marker.id = TID;
+// 			marker.color.r = 0.0; marker.color.g = 0.0;	marker.color.b = 1.0; marker.color.a = 1.0; //blue color
+// 			marker.points.erase(marker.points.begin(), marker.points.end());
+// 			p.x = 0; p.y = 0; p.z = 0; marker.points.push_back(p);
+// 			p.x = 0; p.y = 0; p.z = 1 * axis_dimension; marker.points.push_back(p);
+// 			marker_array.markers.push_back(marker);
+// 		}
+// 
+// 
+// 		
+// 		
+		
+		/* _________________________________
+			|                                 |
+			|         DRAW TEXT INFO          |
+			|_________________________________| */
+	      // 	if (1)
+	      // 	{
+	      // 		visualization_msgs::Marker marker;
+	      // 		marker.header.frame_id = _tracker_frame_id;
+	      // 		//marker.header.frame_id = _fixed_frame_id;
+	      // 		marker.frame_locked = locked;
+	      // 		marker.header.stamp = ros::Time();
+	      // 		marker.ns = "information";
+	      // 		marker.id = _track_id;
+	      // 		marker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+	      // 		marker.lifetime = Duration(duration);
+	      // 		marker.action = visualization_msgs::Marker::ADD;
+	      // 		//if (finish)
+	      // 		//marker.action = visualization_msgs::Marker::DELETE;
+	      // 		//else
+	      // 
+	      // 		//marker.pose = _tracked_object_msg.bounding_box.pose_stamped.pose;
+	      // 
+	      // 		//marker.pose.position.x = 0 + marker.pose.position.x*0.9 + 0;
+	      // 		//marker.pose.position.y = 0 + marker.pose.position.y*0.9 + 0.1;
+	      // 		marker.pose.position.z = _tracked_object_msg.bounding_box.dimensions.z/2+0.1;
+	      // 		marker.scale.z = 0.02; 
+	      // 		//marker.color.r  = 1; marker.color.g  = 1; marker.color.b  = 1; marker.color.a = 1;
+	      // 
+	      // 		if (finish)
+	      // 		{
+	      // 			marker.color.r  = 0.5; marker.color.g  = 0; marker.color.b  = 0; marker.color.a = 1;
+	      // 		}
+	      // 		else
+	      // 		{
+	      // 			marker.color.r  = 0; marker.color.g  = 0; marker.color.b  = 0; marker.color.a = 1;
+	      // 		}
+	      // 
+	      // 		marker.lifetime = Duration(duration);
+	      // 
+	      // 		char tmp_str[255]; 
+	      // 		//sprintf(tmp_str,"\nfr=%0.1f ad=%0.2f vel=%0.2f t=%0.1f did=%d", _fit_ratio, _accumulated_distance, _velocity, _time_since_velocity_computation, _demonstrator_id);
+	      // 		sprintf(tmp_str,"%0.1f", _fit_ratio);
+	      // 
+	      // 		marker.text = "TID" + boost::lexical_cast<std::string>(_track_id) + " V" + boost::lexical_cast<std::string>(view_count) + "(" + tmp_str + ")";
+	      // 
+	      // 		//marker.text.append(tmp_str);
+	      // 		//char tmp_str1[255]; 
+	      // 		//sprintf(tmp_str1,"\nr=%0.1f p=%0.1f y=%0.1f",diff_roll, diff_pitch, diff_yaw);
+	      // 		//marker.text.append(tmp_str1);
+	      // 
+	      // 		marker.text.append("\n");
+	      // 
+	      // 		if (_state_is_moving)
+	      // 		{
+	      // 			marker.text.append("[M");
+	      // 		}
+	      // 		else
+	      // 		{
+	      // 			marker.text.append("[S");
+	      // 		}
+	      // 
+	      // 		//marker.text.append("\n");
+	      // 		if ((ros::Time::now() - _point_cloud_sent_tic).toSec() < 1.0 && (ros::Time::now() - _key_view_tic).toSec() < 1.0) 
+	      // 			marker.text.append(",C,K]");
+	      // 		else if ((ros::Time::now() - _point_cloud_sent_tic).toSec() < 1.0) 
+	      // 			marker.text.append(",C,_]");
+	      // 		else
+	      // 			marker.text.append(",_,_]");
+	      // 
+	      // 		if (finish)	marker.text.append("\n(TRACKING LOST)");
+	      // 
+	      // 
+	      // 		marker_array.markers.push_back(marker);
+	      // 	}
+
+	      // 	/* _________________________________
+	      // 	   |                                 |
+	      // 	   |             DRAW WIREFRAME      |
+	      // 	   |_________________________________| */
+	      // 	if (1)
+	      // 	{
+	      // 		visualization_msgs::Marker marker;
+	      // 		marker.header.frame_id = _tracker_frame_id;
+	      // 		marker.header.stamp = ros::Time();
+	      // 
+	      // 		marker.ns = "wireframe";
+	      // 		marker.id = _track_id;
+	      // 		marker.frame_locked = locked;
+	      // 		marker.type = visualization_msgs::Marker::LINE_LIST;
+	      // 		//if (finish)
+	      // 		//marker.action = visualization_msgs::Marker::DELETE;
+	      // 		//else
+	      // 		marker.action = visualization_msgs::Marker::ADD;
+	      // 		marker.lifetime = Duration(duration);
+	      // 
+	      // 		//marker.pose = _tracked_object_msg.bounding_box.pose_stamped.pose;
+	      // 
+	      // 		marker.scale.x = 0.005; 
+	      // 		double x = _tracked_object_msg.bounding_box.dimensions.x/2; 
+	      // 		double y = _tracked_object_msg.bounding_box.dimensions.y/2; 
+	      // 		double z = _tracked_object_msg.bounding_box.dimensions.z/2; 
+	      // 
+	      // 		_color.a = 0.5;
+	      // 		marker.color = _color;
+	      // 		marker.color.r = 0.5;
+	      // 		marker.color.g = 0.5;
+	      // 		marker.color.b = 0.5;
+	      // 		//marker
+	      // 		if (finish)
+	      // 		{
+	      // 			marker.color.r = 0.1;
+	      // 			marker.color.g = 0.1;
+	      // 			marker.color.b = 0.1;
+	      // 		}
+	      // 
+	      // 		p.x =  x; p.y =  y; p.z =  z; marker.points.push_back(p);
+	      // 		p.x = -x; p.y =  y; p.z =  z; marker.points.push_back(p);
+	      // 		p.x =  x; p.y =  y; p.z = -z; marker.points.push_back(p);
+	      // 		p.x = -x; p.y =  y; p.z = -z; marker.points.push_back(p);
+	      // 		p.x =  x; p.y =  y; p.z = -z; marker.points.push_back(p);
+	      // 		p.x =  x; p.y =  y; p.z =  z; marker.points.push_back(p);
+	      // 		p.x = -x; p.y =  y; p.z = -z; marker.points.push_back(p);
+	      // 		p.x = -x; p.y =  y; p.z =  z; marker.points.push_back(p);
+	      // 
+	      // 		p.x =  x; p.y =  -y; p.z =  z; marker.points.push_back(p);
+	      // 		p.x = -x; p.y =  -y; p.z =  z; marker.points.push_back(p);
+	      // 		p.x =  x; p.y =  -y; p.z = -z; marker.points.push_back(p);
+	      // 		p.x = -x; p.y =  -y; p.z = -z; marker.points.push_back(p);
+	      // 		p.x =  x; p.y =  -y; p.z = -z; marker.points.push_back(p);
+	      // 		p.x =  x; p.y =  -y; p.z =  z; marker.points.push_back(p);
+	      // 		p.x = -x; p.y =  -y; p.z = -z; marker.points.push_back(p);
+	      // 		p.x = -x; p.y =  -y; p.z =  z; marker.points.push_back(p);
+	      // 
+	      // 		p.x =  x; p.y =  y; p.z =  z; marker.points.push_back(p);
+	      // 		p.x =  x; p.y = -y; p.z =  z; marker.points.push_back(p);
+	      // 		p.x =  x; p.y =  y; p.z = -z; marker.points.push_back(p);
+	      // 		p.x =  x; p.y = -y; p.z = -z; marker.points.push_back(p);
+	      // 
+	      // 		p.x = -x; p.y =  y; p.z =  z; marker.points.push_back(p);
+	      // 		p.x = -x; p.y = -y; p.z =  z; marker.points.push_back(p);
+	      // 		p.x = -x; p.y =  y; p.z = -z; marker.points.push_back(p);
+	      // 		p.x = -x; p.y = -y; p.z = -z; marker.points.push_back(p);
+	      // 
+	      // 		marker_array.markers.push_back(marker);
+	      // 	}
+	      // 
+	      // 
+	      // 	/* _________________________________
+	      // 	   |                                 |
+	      // 	   |             DRAW BBOX           |
+	      // 	   |_________________________________| */
+	      // 	if (1)
+	      // 	{
+	      // 		visualization_msgs::Marker marker;
+	      // 		marker.header.frame_id = _tracker_frame_id;
+	      // 		marker.header.stamp = ros::Time();
+	      // 
+	      // 		marker.ns = "boundingbox";
+	      // 		marker.id = _track_id;
+	      // 		marker.type = visualization_msgs::Marker::CUBE;
+	      // 		marker.frame_locked = locked;
+	      // 		//if (finish)
+	      // 		//marker.action = visualization_msgs::Marker::DELETE;
+	      // 		//else
+	      // 		marker.action = visualization_msgs::Marker::ADD;
+	      // 		marker.lifetime = Duration(duration);
+	      // 
+	      // 		//marker.pose = _tracked_object_msg.bounding_box.pose_stamped.pose;
+	      // 
+	      // 		marker.scale.x = _tracked_object_msg.bounding_box.dimensions.x; 
+	      // 		marker.scale.y = _tracked_object_msg.bounding_box.dimensions.y; 
+	      // 		marker.scale.z = _tracked_object_msg.bounding_box.dimensions.z; 
+	      // 
+	      // 		_color.a = 0.1;
+	      // 		marker.color = _color;
+	      // 		if (finish)
+	      // 		{
+	      // 			marker.color.r = 0.9;
+	      // 			marker.color.g = 0.0;
+	      // 			marker.color.b = 0.0;
+	      // 		}
+	      // 
+	      // 		marker_array.markers.push_back(marker);
+	      // 	}
+
+		      neat_marker_publisher.publish(marker_array);
+		      return 1;
+
+
+		  }
+//            void ROS_INFO(const char* arg1, int adaptive_support_lenght);
+            //void ROS_INFO(const char* arg1, int adaptive_support_lenght);
+			//  void rot_mat(int arg1);
+
+
+    };
+
+    
+    
+    class ObjectDescriptorNodelet: public ObjectDescriptor<pcl::PointXYZRGBA>{};
+    PLUGINLIB_DECLARE_CLASS(race_object_descriptor, ObjectDescriptorNodelet, race_object_descriptor::ObjectDescriptorNodelet, nodelet::Nodelet);
+
+}//end feature_extraction namespace
+#endif
+
+

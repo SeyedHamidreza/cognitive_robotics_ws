@@ -1,0 +1,32 @@
+killall -9 rviz
+killall -9 object_tracking_node
+killall -9 nodelet
+killall -9 object_detection_node
+killall -9 object_recognition_node
+killall -9 feature_extraction_node
+killall -9 perception_preprocessing_node
+killall -9 perception_dp_node
+killall -9 rosmaster
+killall -9 rosout
+killall -9 roscore
+killall -9 roslaunch
+killall -9 race_jaco_arm_visualization 
+killall -9 jaco_tf_updater
+killall -9 jaco_arm_driver
+killall -9 race_jaco_arm
+killall -9 static_transform_publisher
+killall -9 perception_db_node 
+killall -9 pointing_detection 
+killall -9 scene_manager_node  
+killall -9 scene_layout_menu 
+killall -9 scene_manager_node 
+killall -9 state_publisher 
+killall -9 user_label_menu 
+killall -9 user_object_labelling 
+killall -9 race_tabletop_segmentation_node 
+killall -9 report_db_continuous 
+killall -9 node_object_conceptualizer 
+killall -9 race_grasp_learning
+killall -9 demonstrator_detection 
+
+

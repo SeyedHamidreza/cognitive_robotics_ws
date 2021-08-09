@@ -1,0 +1,1765 @@
+#ifndef _FEATURE_EXTRACTION_H_
+#define _FEATURE_EXTRACTION_H_
+
+
+//roslaunch race_feature_extraction test_pdbnodelet_node.launch
+//Emulate race_object_tracking by : "rosrun race_feature_extraction test_feature_extraction"
+
+/* _________________________________
+   |                                 |
+   |           INCLUDES              |
+   |_________________________________| */
+
+//system includes
+#include <stdio.h>
+#include <stdlib.h>
+
+//ROS includes
+#include <ros/ros.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <std_msgs/String.h>
+#include <nodelet/nodelet.h>
+#include <pluginlib/class_list_macros.h>   
+#include <pcl/filters/uniform_sampling.h>
+#include <pcl/visualization/cloud_viewer.h>
+
+//package includes
+#include <feature_extraction/spin_image.h>
+#include <race_perception_msgs/perception_msgs.h>
+#include <race_perception_msgs/CompleteRTOV.h>
+
+//Eigen includes
+#include <Eigen/Core>
+
+//PCL includes
+#include <pcl/io/pcd_io.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/features/normal_3d_omp.h>
+#include <pcl/filters/voxel_grid.h>
+#include <CGAL/Plane_3.h>
+#include <pcl/filters/uniform_sampling.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl/point_types.h>
+#include <pcl/common/common_headers.h>
+
+////new added
+#include <pcl/tracking/kld_adaptive_particle_filter_omp.h>
+#include <pcl/tracking/distance_coherence.h>
+#include <pcl/tracking/hsv_color_coherence.h>
+#include <pcl/tracking/approx_nearest_pair_point_cloud_coherence.h>
+#include <pcl/tracking/nearest_pair_point_cloud_coherence.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl/common/centroid.h>
+#include <pcl/common/pca.h>
+#include <pcl/filters/passthrough.h>
+#include <pcl/filters/project_inliers.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/common/transforms.h>
+#include <pcl/filters/conditional_removal.h>
+#include <pcl/io/pcd_io.h>
+//new includes from preprocessing
+//ROS includes
+#include <ros/ros.h>
+//#include "pcl_ros/impl/transforms.hpp"
+#include <pcl/conversions.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <pcl/filters/conditional_removal.h>
+#include <pcl/sample_consensus/ransac.h>
+#include <pcl/sample_consensus/sac_model_plane.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/ModelCoefficients.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/kdtree/kdtree.h>
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/sample_consensus/model_types.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/segmentation/extract_clusters.h>
+#include <pcl/filters/project_inliers.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/surface/convex_hull.h>
+#include <pcl/segmentation/extract_polygonal_prism_data.h>
+//#include <pcl/common/impl/transforms.hpp>
+#include <pcl/common/transforms.h>
+#include <tf/transform_broadcaster.h>
+#include <tf/transform_listener.h>
+#include <tf_conversions/tf_eigen.h>
+//#include "/opt/ros/fuerte/stacks/geometry/tf_conversions/include/tf_conversions/tf_eigen.h"
+#include <visualization_msgs/Marker.h>
+#include <pcl/segmentation/conditional_euclidean_clustering.h>
+
+#include <visualization_msgs/Marker.h>
+#include <visualization_msgs/MarkerArray.h>
+#include <race_perception_utils/print.h>
+#include <pcl_conversions/pcl_conversions.h>
+
+
+//raceua includes
+#include <race_perception_db/perception_db.h>
+#include <race_perception_db/perception_db_serializer.h>
+#include <race_perception_db/MsgTest.h>
+#include <race_perception_utils/cycle.h>
+#include <race_perception_utils/print.h>
+
+
+/* _________________________________
+   |                                 |
+   |        Class definition         |
+   |_________________________________| */
+
+namespace ros {class Publisher;}
+
+/* _________________________________
+   |                                 |
+   |            NameSpace            |
+   |_________________________________| */
+
+using namespace std;
+using namespace pcl;
+using namespace ros;
+using namespace race_perception_db;
+using namespace race_perception_msgs;
+using namespace race_perception_utils;
+using namespace tf;
+/* _________________________________
+  |                                 |
+  |         Global constant         |
+  |_________________________________| */
+
+// #define spin_image_width 8
+// #define spin_image_support_lenght 0.2
+// #define subsample_spinimages 10
+
+ /* _________________________________
+  |                                 |
+  |        Global Parameters       |
+ |_________________________________| */
+
+    //spin images parameters
+    int    spin_image_width = 8 ;
+    double spin_image_support_lenght = 0.1;
+    int    subsample_spinimages = 10;
+    double uniform_sampling_size = 0.06;
+
+/* _________________________________
+   |                                 |
+   |        GLOBAL VARIABLES         |
+   |_________________________________| */
+            
+//typedef pcl::PointXYZRGB PointT;
+typedef PointCloud<PointT> PointCloudT;
+typedef boost::shared_ptr<PointCloudT> PointCloudPtrT;
+
+ boost::shared_ptr<tf::TransformListener> _p_transform_listener;
+
+
+PointCloudPtrT cloud_reference;
+PointCloudPtrT initial_cloud_ref;
+
+boost::shared_ptr<TransformBroadcaster> _br; //a transform broadcaster
+
+
+int compute_bounding_box_dimensions(boost::shared_ptr<PointCloud<PointT> > pc, geometry_msgs::Vector3& dimensions)
+{
+	PointT minimum_pt;
+	PointT maximum_pt;
+
+	getMinMax3D(*pc, minimum_pt, maximum_pt); // min max for bounding box
+	dimensions.x = (maximum_pt.x - minimum_pt.x); 
+	dimensions.y = (maximum_pt.y - minimum_pt.y); 
+	dimensions.z = (maximum_pt.z - minimum_pt.z); 
+	
+	return 1;
+}
+
+int from_affine3f_to_tf_transform(Eigen::Affine3f* t_in, tf::Transform* t_out)
+{
+	t_out->setOrigin(Vector3((*t_in)(0,3), (*t_in)(1,3), (*t_in)(2,3)));
+	Eigen::Quaternionf q(t_in->rotation());
+	Quaternion Q(q.x(),q.y(),q.z(),q.w()); 
+	//tf::Quaternion Q(q.w(),q.x(),q.y(),q.z()); 
+	t_out->setRotation(Q); 
+
+	return 1;
+}
+
+template <typename T>
+int project_pc_to_plane(boost::shared_ptr<pcl::PointCloud<T> > pc_in, boost::shared_ptr<pcl::ModelCoefficients> coefficients, boost::shared_ptr<pcl::PointCloud<T> > pc_out)
+{
+	//Create the projection object
+	pcl::ProjectInliers<T> projection;
+	projection.setModelType(pcl::SACMODEL_NORMAL_PLANE); //set model type
+	projection.setInputCloud(pc_in);
+	projection.setModelCoefficients(coefficients);
+	projection.filter(*pc_out);
+	return 1;
+}
+
+template <typename T>
+int get_transform_from_pca_and_plane(boost::shared_ptr<pcl::PointCloud<T> > cloud, boost::shared_ptr<pcl::PointCloud<T> > cloud_proj, Eigen::Affine3f* trans, ModelCoefficients::Ptr coefficients)
+{
+	/* _________________________________
+	   |                                 |
+	   |    2D PCA (for rotation)        |
+	   |_________________________________| */
+
+	PCA<PointT> pca2D;  //declare a PCA object
+	PointCloud< PointT> pca2D_cloud; //Declare the projection point cloud
+	pca2D.setInputCloud (cloud_proj); //set input point cloud
+	pca2D.project (*cloud_proj, pca2D_cloud);  //project
+
+	PointT pca2D_min, pca2D_max; //get max min projections
+	getMinMax3D (pca2D_cloud, pca2D_min, pca2D_max); 
+	PointT pca2D_ptmin, pca2D_ptmax; 
+	pca2D.reconstruct (pca2D_min, pca2D_ptmin); 
+	pca2D.reconstruct (pca2D_max, pca2D_ptmax); 
+
+	Eigen::Matrix3f rot_mat = pca2D.getEigenVectors(); //get rotation of PCA
+
+	/* _________________________________
+	   |                                 |
+	   |    3D PCA (for translation)     |
+	   |_________________________________| */
+
+	PCA<PointT> pca3D;  //declare a PCA object
+	PointCloud< PointT> pca3D_cloud; //Declare the projection point cloud
+	pca3D.setInputCloud (cloud); //set input point cloud
+	pca3D.project (*cloud, pca3D_cloud);  //project
+
+	PointT pca3D_min, pca3D_max;  //get max min projections
+	getMinMax3D (pca3D_cloud, pca3D_min, pca3D_max); 
+	PointT pca3D_ptmin, pca3D_ptmax; 
+	pca3D.reconstruct (pca3D_min, pca3D_ptmin); 
+	pca3D.reconstruct (pca3D_max, pca3D_ptmax); 
+
+	Eigen::Vector3f cl_translation = pca3D.getMean().head(3); //get translation of PCA 
+
+	//printf("rot mat = [%f %f %f]\n", rot_mat(0,0), rot_mat(0,1), rot_mat(0,2))
+	/* _________________________________
+	   |                                 |
+	   |    Convert to a tf:Transform    |
+	   |_________________________________| */
+
+	//Rotation of PCA: must change some to be sure we have a correctly oriented
+	//reference frame, i.e Reordering of principal components 
+	Eigen::Vector3f v(coefficients->values[0], coefficients->values[1], coefficients->values[2]);
+	Eigen::Matrix4f affine_trans; 
+	affine_trans.col(0) << rot_mat.col(0),0;  
+	//affine_trans.col(1) << (rot_mat.col(2).cross(rot_mat.col(0))).normalized(),0;
+	affine_trans.col(1) << (v.cross(rot_mat.col(0))).normalized(),0;
+	affine_trans.col(2) << v,0; //rot_mat.col(2),0; 
+	affine_trans.col(3) << cl_translation,1;
+
+	//define initial object location
+	*trans = Eigen::Affine3f::Identity();
+	trans->translation() << cl_translation;
+	trans->matrix().col(0) << affine_trans.col(0);
+	trans->matrix().col(1) << affine_trans.col(1); 
+	trans->matrix().col(2) << affine_trans.col(2); 
+	
+	//double x = v.dot(rot_mat.col(0));
+	//printf("dot product is %f\n",x);
+	//tf::transform my_transform;
+	//from_affine3f_to_tf_transform(trans, &my_transform);
+
+	//print_tf_transform(&my_transform, "inside pca");
+
+	return 1;
+}
+
+
+void print_tf_transform(tf::Transform* tf, std::string s)
+{
+	std::ostringstream ss;
+
+	//s.append("fixed_frame_id=" + tf->frame_id_ + " frame_id="+ tf->child_frame_id_);
+
+	btQuaternion q(tf->getRotation().x(),tf->getRotation().y(),tf->getRotation().z(),tf->getRotation().w());
+	double roll, pitch, yaw;
+	tf::Matrix3x3(q).getRPY(roll, pitch, yaw);
+	ROS_INFO("(roll, pitch, yaw) = (%f, %f, %f)",roll, pitch, yaw);
+
+
+	ss << std::fixed << std::setprecision(5) << tf->getOrigin().x();
+	s.append("\nOrigin x=" + ss.str());
+	ss.str("");
+
+	ss << std::fixed << std::setprecision(5) << tf->getOrigin().y();
+	s.append(" y=" + ss.str());
+	ss.str("");
+
+	ss << std::fixed << std::setprecision(5) << tf->getOrigin().z();
+	s.append(" z=" + ss.str());
+	ss.str("");
+
+	ss << std::fixed << std::setprecision(5) << tf->getRotation().x();
+	s.append("\nRotation x=" + ss.str());
+	ss.str("");
+
+	ss << std::fixed << std::setprecision(5) << tf->getRotation().y();
+	s.append(" y=" + ss.str());
+	ss.str("");
+
+	ss << std::fixed << std::setprecision(5) << tf->getRotation().z();
+	s.append(" z=" + ss.str());
+	ss.str("");
+
+	ss << std::fixed << std::setprecision(5) << tf->getRotation().w();
+	s.append(" w=" + ss.str());
+	ss.str("");
+
+	ROS_INFO("%s",s.c_str());
+
+
+}
+int set_obj_to_track2(PointCloudPtrT cloud, tf::StampedTransform* t, const PCTOV::ConstPtr &msg)
+{
+
+	//ROS_WARN("Initializing begin");
+	ROS_ERROR("TEST1 : inside set_obj_to_track");
+	
+	string _fixed_frame_id_tmp = "/odom_combined";
+	string _tracker_frame_id = msg->header.frame_id;
+	PointCloudPtrT initial_cloud;
+	PointCloudPtrT initial_cloud_proj;
+	PointCloudPtrT initial_cloud_ref;
+	Transform _trf;
+	
+	initial_cloud = cloud;
+
+// 	if (_fixed_frame_id_tmp != cloud->header.frame_id)
+// 	{
+// 		ROS_ERROR("%s:\nfixed frame_id and input cloud are not the same", _name.c_str());
+// 		return 0;
+// 	}
+
+	//STEP 1: compute the normal coefficients of the XY plane of the table
+	//coordinate frame
+	ModelCoefficients::Ptr coefficients;
+	coefficients = (ModelCoefficients::Ptr) new ModelCoefficients;
+	coefficients->values.resize(4); //to accomodate ABCD Hessian form coefficients
+
+	boost::shared_ptr<PointCloud<PointXYZ> > vec_z = (boost::shared_ptr<PointCloud<PointXYZ> >) new PointCloud<PointXYZ>;
+	boost::shared_ptr<PointCloud<PointXYZ> > new_vec_z = (boost::shared_ptr<PointCloud<PointXYZ> >) new PointCloud<PointXYZ>;
+	PointXYZ pt; pt.x = 0; pt.y = 0; pt.z = 1;
+	vec_z->points.push_back(pt);
+	
+	Eigen::Affine3d eigen_trf;
+	tf::TransformTFToEigen (*t, eigen_trf);
+	pcl::transformPointCloud<PointXYZ>(*vec_z, *new_vec_z, eigen_trf);
+
+	ROS_INFO("TEST2 : inside set_obj_to_track");
+	//transformPointCloud(*vec_z, *new_vec_z,  *t);
+	ROS_INFO("TEST2 : new_vec_z->points.at(0).x = %f", new_vec_z->points.at(0).x);
+	ROS_INFO("TEST2 : new_vec_z->points.at(0).y = %f", new_vec_z->points.at(0).y);
+	ROS_INFO("TEST2 : new_vec_z->points.at(0).z = %f", new_vec_z->points.at(0).z);
+	
+	ROS_INFO("TEST2 : t->getOrigin().x() = %f", t->getOrigin().x());
+	ROS_INFO("TEST2 : t->getOrigin().y() = %f", t->getOrigin().y());
+	ROS_INFO("TEST2 : t->getOrigin().z() = %f", t->getOrigin().z());
+	
+	coefficients->values[0] = new_vec_z->points.at(0).x - t->getOrigin().x();
+	coefficients->values[1] = new_vec_z->points.at(0).y - t->getOrigin().y();
+	coefficients->values[2] = new_vec_z->points.at(0).z - t->getOrigin().z();
+
+	ROS_INFO("TEST21 : inside set_obj_to_track");
+
+	//D = -(Ax + By + Cz)
+	coefficients->values[3] = -(coefficients->values[0]*t->getOrigin().x() + 
+			coefficients->values[1]*t->getOrigin().y() + 
+			coefficients->values[2]*t->getOrigin().z());
+
+	//ROS_INFO("t origin x=%f y=%f z=%f", t->getOrigin().x(),t->getOrigin().y(),t->getOrigin().z());
+	//ROS_INFO("Plane normal vector has x=%f y=%f z=%f", new_vec_z->points.at(0).x, new_vec_z->points.at(0).y, new_vec_z->points.at(0).z);
+
+	ROS_ERROR("TEST3");
+	//printf("coefficients %f %f %f %f\n", coefficients->values[0], coefficients->values[1],coefficients->values[2],coefficients->values[3]);
+
+	project_pc_to_plane(initial_cloud, coefficients, initial_cloud_proj);
+
+	ROS_ERROR("TEST4 : inside set_obj_to_track");
+	//Compute the transform based on the PCA analisys
+	Eigen::Affine3f trans;
+	get_transform_from_pca_and_plane(initial_cloud, initial_cloud_proj, &trans, coefficients);
+	
+	//get_transform_from_pca(cloud, &trans);
+
+	ROS_ERROR("TEST5 : inside set_obj_to_track");//Transform the point cloud cloud_reference to bring it to the local coordinate frames
+	from_affine3f_to_tf_transform(&trans, &_trf); //get the tf transform
+            
+	ROS_ERROR("TEST6 : inside set_obj_to_track");
+	
+	_br->sendTransform(StampedTransform(_trf, Time::now(), _fixed_frame_id_tmp, _tracker_frame_id));
+
+	tf::TransformTFToEigen (_trf.inverse(), eigen_trf);
+	pcl::transformPointCloud<PointT>(*cloud, *cloud_reference, eigen_trf);
+	cloud_reference->header.frame_id = _tracker_frame_id;
+// 	_tracker->setTrans(trans);
+// 	_tracker->setMinIndices (int (cloud_reference->points.size ()) / 2);
+// 	_tracker->setReferenceCloud(cloud_reference);
+
+	initial_cloud_ref = cloud_reference;
+	
+	geometry_msgs::Vector3 dimensions;
+	compute_bounding_box_dimensions(cloud_reference, dimensions);
+	
+	ROS_ERROR("TEST7 : inside set_obj_to_track");
+	//ROS_WARN("Initializing end");
+	return 1;
+}
+
+
+namespace race_feature_extraction
+{
+    template <class PointT>
+        class FeatureExtraction: public nodelet::Nodelet 
+    {
+        public:
+            //Type defs
+
+            //local variables
+            string _name;
+            bool _verb;
+            ros::NodeHandle* _p_nh; // The pointer to the node handle
+            ros::NodeHandle _nh; // The node handle
+            ros::NodeHandle _priv_nh; // The node handle
+            ros::NodeHandle* _p_priv_nh; // The node handle
+            bool _flg_is_nodelet; //a flag to check if this code is running as a node or a nodelet
+            boost::shared_ptr<ros::Subscriber> _p_pcin_subscriber;
+            boost::shared_ptr<ros::Subscriber> _p_pcin_subscriber2;
+
+            //boost::shared_ptr<ros::Publisher> _p_pcin_publisher;
+            boost::shared_ptr<ros::Publisher> _p_crtov_publisher;
+	    boost::shared_ptr<ros::Publisher> _p_projected_object_point_cloud_to_table_publisher;
+	    boost::shared_ptr<ros::Publisher> _p_projected_object_point_cloud_to_table_publisher2;
+
+            Publisher marker_publisher;
+            Publisher neat_marker_publisher;
+
+            std::string _id_name;
+            PerceptionDB* _pdb; //initialize the class
+            boost::shared_ptr<CycleDebug> cd;
+
+	    tf::StampedTransform stf;
+
+            /* _________________________________
+               |                                 |
+               |           PARAMETERS			|
+               |_________________________________| */
+
+            //double _param1;
+            //string _param2;
+
+            /* _________________________________
+               |                                 |
+               |           CONSTRUCTORS          |
+               |_________________________________| */
+
+            FeatureExtraction(){_flg_is_nodelet = true;};
+
+            FeatureExtraction(ros::NodeHandle* n)
+            {
+                _flg_is_nodelet = false; 
+                _p_nh = n; //if this is a node set both the nodehandle and private node handle to n
+                _p_priv_nh = n; 
+                onInit();
+            };
+
+            /**
+             * @brief Destructor
+             */
+            ~FeatureExtraction()
+            {
+                PrettyPrint pp(_name);
+                pp.info(std::ostringstream().flush() << _name.c_str() << ": Destructor called");
+                pp.info(std::ostringstream().flush() << _name.c_str() << ": Finished destructor");
+                pp.printCallback();
+
+
+            };
+
+	    /* _________________________________
+               |                                 |
+               |           CLASS METHODS         |
+               |_________________________________| */
+
+            void onInit(void)
+            {
+                //create a node handle in internal nh_ variable, and point p_nh_
+                //to it. Only done if we are using a nodelet.
+                if (_flg_is_nodelet == true)
+                {
+                    _nh = getNodeHandle(); 
+                    _p_nh = &_nh;
+                    _priv_nh = getPrivateNodeHandle(); 
+                    _p_priv_nh = &_priv_nh;
+                }
+
+                /////////////////////////////////
+                /* ______________________________
+                   |                             |
+                   |  working area for grasping  |
+                   |_____________________________| */
+		
+		//init listener
+		_p_transform_listener = (boost::shared_ptr<tf::TransformListener>) new tf::TransformListener;
+		ros::Duration(0.5).sleep();
+		ROS_INFO(" a tf lisener has been created" )  ;	
+		//init broadcaster
+		_br = (boost::shared_ptr<TransformBroadcaster>) new TransformBroadcaster;
+		ROS_INFO(" a tf broadcaster has been created" )  ;	
+
+                _id_name = "_ObjID_";
+                //Initialize tf stuff
+
+                //initialize parameters
+                _name = _p_priv_nh->getNamespace();
+
+                PrettyPrint pp(_name);
+
+                _p_priv_nh->param<bool>("verbose", _verb , false);
+
+		//read spin images parameters
+		_p_priv_nh->param<int>("/perception/spin_image_width", spin_image_width, spin_image_width);
+		_p_priv_nh->param<double>("/perception/spin_image_support_lenght", spin_image_support_lenght, spin_image_support_lenght);
+		_p_priv_nh->param<int>("/perception/subsample_spinimages", subsample_spinimages, subsample_spinimages);
+		_p_priv_nh->param<double>("/perception/uniform_sampling_size", uniform_sampling_size, uniform_sampling_size);
+
+                //create a cycle debug
+                cd = (boost::shared_ptr<CycleDebug>) new CycleDebug(_p_nh, _name);
+
+                //initialize the subscriber
+                //Mike: topic name is computed by getting the namespace path and then adding
+                // /tracker/tracked_object_point_cloud
+                unsigned found = _name.find_last_of("/\\");
+                std::string pcin_topic = _name.substr(0,found) + "/tracker/tracked_object_point_cloud";
+                _p_pcin_subscriber = (boost::shared_ptr<ros::Subscriber>) new ros::Subscriber;
+                *_p_pcin_subscriber = _p_nh->subscribe (pcin_topic, 1, &FeatureExtraction::callback, this);
+
+                //initialize the Publisher
+                //_p_pcin_publisher = (boost::shared_ptr<ros::Publisher>) new ros::Publisher;
+                //*_p_pcin_publisher = _p_nh->advertise<race_perception_msgs::RTOV> ("spin_images_tracked_object_view", 100);
+
+		
+		//initialize the publishers
+		neat_marker_publisher = _p_nh->advertise<visualization_msgs::MarkerArray>("/perception/feature_extraction/neat_markers", 100);
+			
+		
+
+		_p_crtov_publisher = (boost::shared_ptr<ros::Publisher>) new ros::Publisher;
+                *_p_crtov_publisher = _p_priv_nh->advertise<race_perception_msgs::CompleteRTOV> ("spin_images_tracked_object_view", 100);
+
+
+
+		_p_projected_object_point_cloud_to_table_publisher = (boost::shared_ptr<ros::Publisher>) new ros::Publisher;
+		*_p_projected_object_point_cloud_to_table_publisher = _p_nh->advertise<sensor_msgs::PointCloud2>("/projected_object_point_clouds", 100);
+	
+		_p_projected_object_point_cloud_to_table_publisher2 = (boost::shared_ptr<ros::Publisher>) new ros::Publisher;
+		*_p_projected_object_point_cloud_to_table_publisher2 = _p_nh->advertise<sensor_msgs::PointCloud2>("/projected_object_point_clouds_after_transform", 100);
+	
+		
+                //initialize the database
+                _pdb = race_perception_db::PerceptionDB::getPerceptionDB(_p_priv_nh, _flg_is_nodelet); //initialize the database class
+
+                //Output initialization information
+                pp.printInitialization();				
+
+            };
+
+            /**
+             * @brief This is Miguel's version of the callback.
+             * @param msg
+             */
+            void callback(const race_perception_msgs::PCTOV::ConstPtr& msg)
+            {
+                cd->tic();//cycle debug tic
+                PrettyPrint pp(_name);
+
+		//read spin images parameters
+		_p_priv_nh->param<int>("/perception/spin_image_width", spin_image_width, spin_image_width);
+		_p_priv_nh->param<double>("/perception/spin_image_support_lenght", spin_image_support_lenght, spin_image_support_lenght);
+		_p_priv_nh->param<int>("/perception/subsample_spinimages", subsample_spinimages, subsample_spinimages);
+      		_p_priv_nh->param<double>("/perception/uniform_sampling_size", uniform_sampling_size, uniform_sampling_size);
+
+		
+		pp.info(std::ostringstream().flush()<<"\t\t[-] spin_image_width :"<< spin_image_width);
+		pp.info(std::ostringstream().flush()<<"\t\t[-] spin_image_support_lenght :"<< spin_image_support_lenght);
+		pp.info(std::ostringstream().flush()<<"\t\t[-] subsample_spinimages :"<< subsample_spinimages);
+		
+		ros::Time beginProc = ros::Time::now(); //start tic
+                /* ________________________________________________
+                   |                                                 |
+                   |  Compute the Spin-Images for given point cloud  |
+                   |_________________________________________________| */
+		
+		
+                boost::shared_ptr<PointCloud<PointT> > target_pc (new PointCloud<PointT>); //Declare a boost share ptr to the pointCloud
+                pcl::fromROSMsg(msg->point_cloud,*target_pc ); //Convert the pointcloud msg to a pcl point cloud
+
+
+		
+		pp.info(std::ostringstream().flush() << "The size of converted point cloud  = " << target_pc->points.size() );
+
+
+		//Declare a boost share ptr to the spin image msg
+                boost::shared_ptr< vector <SITOV> > msg_out;
+                msg_out = (boost::shared_ptr< vector <SITOV> >) new (vector <SITOV>);
+		pp.info(std::ostringstream().flush() << "Given point cloud has " << target_pc->points.size() << " points.");
+      
+// 		//downsampling voxel grid approach 
+// 		boost::shared_ptr<PointCloud<PointT> > cloud_filtered (new PointCloud<PointT>);
+// 		pcl::VoxelGrid<PointT > voxelized_point_cloud;	
+// 		voxelized_point_cloud.setInputCloud (target_pc);
+// 		voxelized_point_cloud.setLeafSize (uniform_sampling_size, uniform_sampling_size, uniform_sampling_size);
+// 		voxelized_point_cloud.filter (*cloud_filtered);
+// 		find nearest point to each voxel centroid
+// 		pcl::PointCloud<int> uniform_sampling_indices;
+// 		for (int i =0; i < cloud_filtered->points.size() ;i++)
+// 		{
+// 		    int nearest_point_index = 0;
+// 		    double minimum_distance = 1000;
+// 		    for (int j=0; j < target_pc->points.size(); j++)
+// 		    {		
+// 			double distance = sqrt(	pow((cloud_filtered->points[i].x - target_pc->points[j].x) , 2) +
+// 						pow((cloud_filtered->points[i].y - target_pc->points[j].y) , 2) +
+// 						pow((cloud_filtered->points[i].z - target_pc->points[j].z), 2));
+// 			if (distance < minimum_distance)
+// 			{
+// 				nearest_point_index = j;
+// 				minimum_distance = distance;
+// 			}
+// 		    }
+// 		    uniform_sampling_indices.push_back(nearest_point_index);
+// 		
+// 		}
+// 		for (int i=0; i<uniform_sampling_indices.size(); i++)
+// 		{
+// 		    ROS_INFO("uniform sampling at[%i] = %i",i, uniform_sampling_indices.points.at(i));
+// 		}
+// 		boost::shared_ptr<PointCloud<PointT> > model_keypoints (new PointCloud<PointT>);
+// 		pcl::copyPointCloud (*target_pc, uniform_sampling_indices.points, *model_keypoints);
+		
+		//visualization minimum and maximum points for a given point cloud;
+// 		PointT minimum_pt;
+// 		PointT maximum_pt;
+// 		getMinMax3D(*target_pc, minimum_pt, maximum_pt); // min max for bounding box
+// 
+// 		
+		ROS_INFO ("test1");
+
+		//////////////////////////////////
+                /* _____________________________________
+                   |                                   |
+                   |  start working area for grasping  |
+                   |___________________________________| */
+		
+		
+	      // Rotation matrix can be formed in several ways. 
+	      // One way is to get it from rotation axis and rotation angle:
+	      // 
+	      // 1 - Get the plane coefficients of your ground plane from RANSAC. First three coefficients correspond to your ground planes normal (table). 
+	      // 2 - Generate the normal vector for your desired plane. If it is xy plane, since in xy plane z is 0, its normal is x=0,y=0 and z=1. 
+	      // 3 - Calculate cross product of normal of ground plane and normal of xy plane to get rotation vector (axis) which is a unit vector. 
+	      // 4 - Calculate the rotation angle. Angle between the planes is equal to angle between the normals. From the definition of the dot product, 
+	      //     you can extract the angle between two normal vectors. In case of XY plane, it is equal to theta=arccos(C/sqrt(A^2+B^2+C^2) where A, B, C are first three coefficients of ground plane. 
+	      // 5 - You now have rotation vector and rotation angle. You can generate the rotation matrix (3x3) or quaternion. Look for the formula in Wikipedia. 
+	      // 6 - Generate the complete transformation matrix. If you do not perform any translation or scaling, your third row and column will have zero except (4,4) entry which is 1. 
+	      // 7 - Apply the transformation simply with transformPointCloud(cloud,transformed,transformationMatrix) 
+		
+
+		string _fixed_frame_id_tmp = "/odom_combined";
+		string _table_frame_id = "/perception/tabletop_segmentation/table";
+		//STEP 0: compute the transform between two coordinate frames.
+		try
+		{
+			_p_transform_listener->lookupTransform(_fixed_frame_id_tmp, _table_frame_id, ros::Time(0), stf);
+		}
+		catch (tf::TransformException &ex)
+		{
+			ROS_ERROR("Could not get table frame_id. Will not update tracker reference cloud. Could not get skeleton tf. tf error was: %s",  ex.what());
+		}
+		
+		//br.sendTransform(tf::StampedTransform(computedTransform, ros::Time::now(), "parent name e.g world", transformName));
+		_br->sendTransform(StampedTransform(stf, Time::now(), _fixed_frame_id_tmp, "STF"));
+	
+		
+		
+		
+/*		
+TOVI transformPointFromCameratoArmHand(TOVI _tovi, boost::shared_ptr<tf::TransformListener> listener)
+{
+
+    TOVI _tovi_out, _tovi_tmp;
+    std::string tovi_key = _pdb->makeKey(key::TOVI, _tovi.track_id, 1 );
+    _tovi_tmp = monitor_TOVI (tovi_key);
+
+    // a point in the base_laser frame that we'd like to transform to the _arm_fram_id frame
+    geometry_msgs::PointStamped center_of_object_in_camera_frame;
+    center_of_object_in_camera_frame.header.frame_id = "/odom_combined";
+
+    //we'll just use the most recent transform available
+    center_of_object_in_camera_frame.header.stamp = ros::Time();
+    center_of_object_in_camera_frame.point.x = _tovi_tmp.pose_stamped.pose.position.x;
+    center_of_object_in_camera_frame.point.y = _tovi_tmp.pose_stamped.pose.position.y;
+    center_of_object_in_camera_frame.point.z = _tovi_tmp.pose_stamped.pose.position.z;
+
+
+    try
+    {
+	geometry_msgs::PointStamped center_of_object_in_arm_hand_frame;
+	listener -> transformPoint("/jaco_/jaco_link_hand", center_of_object_in_camera_frame, center_of_object_in_arm_hand_frame);
+
+	ROS_INFO("center_of_object_in_camera_frame: (%.2f, %.2f. %.2f) -----> center_of_object_in_arm_HAND_frame: (%.2f, %.2f, %.2f) at time %.2f",
+	    center_of_object_in_camera_frame.point.x, center_of_object_in_camera_frame.point.y, center_of_object_in_camera_frame.point.z,
+	    center_of_object_in_arm_hand_frame.point.x, center_of_object_in_arm_hand_frame.point.y, center_of_object_in_arm_hand_frame.point.z, center_of_object_in_arm_hand_frame.header.stamp.toSec());
+	
+	_tovi_out.pose_stamped.pose.position.x =  center_of_object_in_arm_hand_frame.point.x;
+	_tovi_out.pose_stamped.pose.position.y =  center_of_object_in_arm_hand_frame.point.y;
+	_tovi_out.pose_stamped.pose.position.z =  center_of_object_in_arm_hand_frame.point.z;
+
+	_tovi_out.pose_stamped.pose.orientation = _tovi.pose_stamped.pose.orientation;
+	//fill all the filds of the TOVI_OUT
+	_tovi_out.track_id = _tovi.track_id;
+	_tovi_out.header.stamp = _tovi.header.stamp;
+	_tovi_out.track_id = _tovi.track_id;
+	_tovi_out.view_id = _tovi.view_id;
+	_tovi_out.dimensions = _tovi.dimensions;
+
+	_tovi_out.object_label = _tovi.object_label;
+	_tovi_out.minimum_distance = _tovi.minimum_distance;
+	_tovi_out.object_lost = _tovi.object_lost;
+
+	return (_tovi_out);
+    }
+    catch(tf::TransformException& ex)
+    {
+	ROS_ERROR("Received an exception trying to transform a point from \"/perception/tabletop_segmentation/arm\" to \"/jaco_/jaco_link_hand\": %s", ex.what());
+    }
+    
+}*/
+
+		//STEP 1: compute the normal coefficients of the XY plane of the table
+		ModelCoefficients::Ptr coefficients;
+		coefficients = (ModelCoefficients::Ptr) new ModelCoefficients;
+		coefficients->values.resize(4); //to accomodate ABCD Hessian form coefficients
+
+		boost::shared_ptr<PointCloud<PointXYZ> > vec_z = (boost::shared_ptr<PointCloud<PointXYZ> >) new PointCloud<PointXYZ>;
+		boost::shared_ptr<PointCloud<PointXYZ> > new_vec_z = (boost::shared_ptr<PointCloud<PointXYZ> >) new PointCloud<PointXYZ>;
+		PointXYZ pt; pt.x = 0; pt.y = 0.0; pt.z = 0.5;
+		vec_z->points.push_back(pt);
+		
+		
+		//visualize point
+		visualization_msgs::MarkerArray marker_array; 
+		if(1)
+		{
+		    visualization_msgs::Marker point;
+		    point.header.frame_id = "/STF";
+		    point.ns = "STF1";
+		    point.id = 0;
+		    point.pose.position.x = 0;
+		    point.pose.position.y = 0;
+		    point.pose.position.z = 0.2;
+		    point.type = visualization_msgs::Marker::SPHERE;
+		    point.action = visualization_msgs::Marker::ADD;
+		    point.lifetime = Duration(5);
+		    point.scale.x = 0.07;	point.scale.y = 0.07; 	point.scale.z = 0.07; 
+		    point.color.r = 0.95; point.color.g = 0.95; point.color.b = 0.95;  point.color.a = 1;
+		    point.frame_locked = true;
+		    marker_array.markers.push_back(point);
+		}
+		
+		//transform the normal coefficients (0,0,1) to the table frame (support plane for object)
+		Eigen::Affine3d eigen_trf;
+
+		// Obtain the aligned point cloud
+		tf::TransformTFToEigen (stf, eigen_trf);
+		pcl::transformPointCloud<PointXYZ>(*vec_z, *new_vec_z, eigen_trf);
+		
+		if(1)
+		{
+		    visualization_msgs::Marker point;
+		    point.header.frame_id = "/STF";
+		    point.ns = "normal_table";
+		    point.id = 0;
+		    point.pose.position.x = new_vec_z->points.at(0).x ;
+		    point.pose.position.y = new_vec_z->points.at(0).y;
+		    point.pose.position.z = new_vec_z->points.at(0).z;
+		    point.type = visualization_msgs::Marker::SPHERE;
+		    point.action = visualization_msgs::Marker::ADD;
+		    point.lifetime = Duration(5);
+		    point.scale.x = 0.07;	point.scale.y = 0.07; 	point.scale.z = 0.07; 
+		    point.color.r = 1; point.color.g = 0.0; point.color.b = 0;  point.color.a = 1;
+		    point.frame_locked = true;
+		    marker_array.markers.push_back(point);
+		}
+
+		
+		if(1)
+		{
+		    visualization_msgs::Marker point;
+		    point.header.frame_id = "/STF";
+		    point.ns = "normal_table-STF";
+		    point.id = 0;
+		    point.pose.position.x = new_vec_z->points.at(0).x - stf.getOrigin().x() ;
+		    point.pose.position.y = new_vec_z->points.at(0).y - stf.getOrigin().y();
+		    point.pose.position.z = new_vec_z->points.at(0).z - stf.getOrigin().z();
+		    point.type = visualization_msgs::Marker::SPHERE;
+		    point.action = visualization_msgs::Marker::ADD;
+		    point.lifetime = Duration(5);
+		    point.scale.x = 0.07;	point.scale.y = 0.07; 	point.scale.z = 0.07; 
+		    point.color.r = 0.00; point.color.g = 0.0; point.color.b = 1;  point.color.a = 1;
+		    point.frame_locked = true;
+		    marker_array.markers.push_back(point);
+		}
+		
+		neat_marker_publisher.publish(marker_array);
+
+
+		coefficients->values[0] = new_vec_z->points.at(0).x - stf.getOrigin().x();
+		coefficients->values[1] = new_vec_z->points.at(0).y - stf.getOrigin().y();
+		coefficients->values[2] = new_vec_z->points.at(0).z - stf.getOrigin().z();
+	
+/*		
+		
+		ROS_INFO("coefficients.x = %f", coefficients->values[0]);
+		ROS_INFO("coefficients.y = %f", coefficients->values[1]);
+		ROS_INFO("coefficients.z = %f", coefficients->values[2]);*/
+		
+		//D = -(Ax + By + Cz)
+		coefficients->values[3] = -( coefficients->values[0]*stf.getOrigin().x() + 
+					      coefficients->values[1]*stf.getOrigin().y() + 
+					      coefficients->values[2]*stf.getOrigin().z());
+
+		boost::shared_ptr<pcl::PointCloud<PointT> > initial_cloud_proj (new PointCloud<PointT>);//Declare a boost share ptr to the pointCloud
+		project_pc_to_plane(target_pc, coefficients, initial_cloud_proj);
+
+		
+// 		//Declare PCTOV msg 
+		boost::shared_ptr<race_perception_msgs::PCTOV> projected_point_cloud (new race_perception_msgs::PCTOV );
+		pcl::toROSMsg(*initial_cloud_proj, projected_point_cloud->point_cloud);	    
+		_p_projected_object_point_cloud_to_table_publisher2->publish (projected_point_cloud->point_cloud);
+	 
+		
+		//compute 2D and 3D rotations and projective or affine transformations
+		Eigen::Affine3f trans;
+		get_transform_from_pca_and_plane(target_pc, initial_cloud_proj, &trans, coefficients);
+		ROS_ERROR("TEST4");
+				
+		tf::Transform _trf;
+		std::string _tracker_frame_id = "/perception/pipeline" + boost::lexical_cast<std::string>(msg->track_id) + "/tracker";
+		std::string object_frame_id = "/perception/pipeline" + boost::lexical_cast<std::string>(msg->track_id) + "/object_frame_id";
+		from_affine3f_to_tf_transform(&trans, &_trf); //get the tf transform	
+			
+		string s;
+		print_tf_transform(&_trf, s);	
+
+// 		float x= msg -> pose_stamped.pose.position.x;
+// 		float y= msg -> pose_stamped.pose.position.y;
+// 		float z= msg -> pose_stamped.pose.position.z;
+// 		_trf.setOrigin( tf::Vector3(x, y, z) );
+
+// 		tf::Quaternion rotation;
+// 		rotation.setRPY(0, 0, 1.57);		
+// 		_trf.setRotation(rotation);
+// 				
+// 		_trf.setOrientation( tf::Vector3(x, y, z) );
+// 
+
+		_br->sendTransform(StampedTransform(_trf, Time::now(), _fixed_frame_id_tmp, object_frame_id));
+		ROS_ERROR("TEST6");
+		unsigned int TID = msg -> track_id;
+		//set_neat_visualization_marker_array_for_manipulation(object_frame_id , TID);
+
+		
+		boost::shared_ptr<PointCloud<PointXYZRGBA> > new_pc = (boost::shared_ptr<PointCloud<PointXYZRGBA> >) new PointCloud<PointXYZRGBA>;		
+		Eigen::Affine3d eigen_trf2;
+		tf::TransformTFToEigen (_trf, eigen_trf2);
+		pcl::transformPointCloud<PointXYZRGBA>(*initial_cloud_proj, *new_pc, eigen_trf2);
+
+		//Declare PCTOV msg 
+		boost::shared_ptr<race_perception_msgs::PCTOV> transform_point_cloud (new race_perception_msgs::PCTOV );
+		pcl::toROSMsg(*new_pc, transform_point_cloud->point_cloud);	    
+		_p_projected_object_point_cloud_to_table_publisher->publish (transform_point_cloud->point_cloud);
+		
+		
+		//initial_cloud_ref = cloud_reference;
+		geometry_msgs::Vector3 dimensions;
+		compute_bounding_box_dimensions(target_pc, dimensions);
+		ROS_INFO("TEST7 : dimensions.x = %f ", dimensions.x);
+		ROS_INFO("TEST7 : dimensions.y = %f ", dimensions.y);
+		ROS_INFO("TEST7 : dimensions.z = %f ", dimensions.z);
+	
+
+// 		if(!set_obj_to_track2(target_pc, &stf, msg))
+// 		{
+// 		    ROS_ERROR("%s: Could not initialize tracker", _name.c_str());
+// 		}
+// 		ROS_ERROR("outside");
+
+
+//		set_neat_visualization_marker_array_for_manipulation(msg);
+		
+// 		// compute principal direction
+// 		Eigen::Vector4f centroid;
+// 		pcl::compute3DCentroid(*target_pc, centroid);
+// 		Eigen::Matrix3f covariance;
+// 		
+// 		computeCovarianceMatrixNormalized(*target_pc, centroid, covariance);
+// 		Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver(covariance, Eigen::ComputeEigenvectors);
+// 		Eigen::Matrix3f eigDx = eigen_solver.eigenvectors();
+// 		eigDx.col(2) = eigDx.col(0).cross(eigDx.col(1));
+// 
+// 		// move the points to the that reference frame
+// 		Eigen::Matrix4f p2w(Eigen::Matrix4f::Identity());
+// 		p2w.block<3,3>(0,0) = eigDx.transpose();
+// 		p2w.block<3,1>(0,3) = -1.f * (p2w.block<3,3>(0,0) * centroid.head<3>());
+// 		pcl::PointCloud<PointT> cPoints;
+// 		pcl::transformPointCloud(*target_pc, cPoints, p2w);
+// 
+// 		PointT min_pt, max_pt;
+// 		pcl::getMinMax3D(cPoints, min_pt, max_pt);
+// 		const Eigen::Vector3f mean_diag = 0.5f*(max_pt.getVector3fMap() + min_pt.getVector3fMap());
+// 
+// 		// final transform
+// 		const Eigen::Quaternionf qfinal(eigDx);
+// 		const Eigen::Vector3f tfinal = eigDx*mean_diag + centroid.head<3>();
+// 		
+// 	      /* _________________________________
+// 		  |                                 |
+// 		  |    Convert to a tf:Transform    |
+// 		  |_________________________________| */
+// 
+// 	      //Rotation of PCA: must change some to be sure we have a correctly oriented
+// 	      //reference frame, i.e Reordering of principal components 
+// 	      Eigen::Vector3f v(coefficients->values[0], coefficients->values[1], coefficients->values[2]);
+// 	      Eigen::Matrix4f affine_trans; 
+// 	      affine_trans.col(0) << eigDx.col(0),0;  
+// 	      affine_trans.col(1) << (v.cross(eigDx.col(0))).normalized(),0;
+// 	      affine_trans.col(2) << v,0; //rot_mat.col(2),0; 
+// 	      affine_trans.col(3) << mean_diag,1;
+// 
+// 	      //define initial object location
+// 	      Eigen::Affine3f trans2;
+// 	      trans2 = Eigen::Affine3f::Identity();
+// 	      trans2.translation() << mean_diag;
+// 	      trans2.matrix().col(0) << affine_trans.col(0);
+// 	      trans2.matrix().col(1) << affine_trans.col(1); 
+// 	      trans2.matrix().col(2) << affine_trans.col(2); 
+// 
+// 	      tf::Transform _trf2;
+// 	      from_affine3f_to_tf_transform(&trans2, &_trf2); //get the tf transform	
+// 	      
+// 	      s= "PCA";
+// 	      print_tf_transform(&_trf2, s);
+// 	      
+// 
+// 	      std::string PCA_object =  "/PCA_object_"+boost::lexical_cast<std::string>(msg->track_id);
+// 
+// 	      _trf2.setOrigin( tf::Vector3(x, y, z) );
+// 	      _br->sendTransform(StampedTransform(_trf2, Time::now(), _fixed_frame_id_tmp, PCA_object));
+// 
+
+// 	/*	
+// 	PCA<PointT> pca2D;  //declare a PCA object
+// 	PointCloud< PointT> pca2D_cloud; //Declare the projection point cloud
+// 	pca2D.setInputCloud (cloud_proj); //set input point cloud
+// 	pca2D.project (*cloud_proj, pca2D_cloud);  //project
+// 
+// 	PointT pca2D_min, pca2D_max; //get max min projections
+// 	getMinMax3D (pca2D_cloud, pca2D_min, pca2D_max); 
+// 	PointT pca2D_ptmin, pca2D_ptmax; 
+// 	pca2D.reconstruct (pca2D_min, pca2D_ptmin); 
+// 	pca2D.reconstruct (pca2D_max, pca2D_ptmax); 
+// 
+// 	Eigen::Matrix3f rot_mat = pca2D.getEigenVectors(); //get rotation of PCA
+// 
+// 	/* _________________________________
+// 	   |                                 |
+// 	   |    3D PCA (for translation)     |
+// 	   |_________________________________| */
+// 
+// 	PCA<PointT> pca3D;  //declare a PCA object
+// 	PointCloud< PointT> pca3D_cloud; //Declare the projection point cloud
+// 	pca3D.setInputCloud (cloud); //set input point cloud
+// 	pca3D.project (*cloud, pca3D_cloud);  //project
+// 
+// 	PointT pca3D_min, pca3D_max;  //get max min projections
+// 	getMinMax3D (pca3D_cloud, pca3D_min, pca3D_max); 
+// 	PointT pca3D_ptmin, pca3D_ptmax; 
+// 	pca3D.reconstruct (pca3D_min, pca3D_ptmin); 
+// 	pca3D.reconstruct (pca3D_max, pca3D_ptmax); 
+// 
+// 	Eigen::Vector3f cl_translation = pca3D.getMean().head(3); //get translation of PCA 
+// 
+// 	//printf("rot mat = [%f %f %f]\n", rot_mat(0,0), rot_mat(0,1), rot_mat(0,2))
+// 	/* _________________________________
+// 	   |                                 |
+// 	   |    Convert to a tf:Transform    |
+// 	   |_________________________________| */
+// 
+// 	//Rotation of PCA: must change some to be sure we have a correctly oriented
+// 	//reference frame, i.e Reordering of principal components 
+// 	Eigen::Vector3f v(coefficients->values[0], coefficients->values[1], coefficients->values[2]);
+// 	Eigen::Matrix4f affine_trans; 
+// 	affine_trans.col(0) << rot_mat.col(0),0;  
+// 	//affine_trans.col(1) << (rot_mat.col(2).cross(rot_mat.col(0))).normalized(),0;
+// 	affine_trans.col(1) << (v.cross(rot_mat.col(0))).normalized(),0;
+// 	affine_trans.col(2) << v,0; //rot_mat.col(2),0; 
+// 	affine_trans.col(3) << cl_translation,1;
+// 
+// 	//define initial object location
+// 	*trans = Eigen::Affine3f::Identity();
+// 	trans->translation() << cl_translation;
+// 	trans->matrix().col(0) << affine_trans.col(0);
+// 	trans->matrix().col(1) << affine_trans.col(1); 
+// 	trans->matrix().col(2) << affine_trans.col(2); */
+	
+	//double x = v.dot(rot_mat.col(0));
+	//printf("dot product is %f\n",x);
+	//tf::transform my_transform;
+	//from_affine3f_to_tf_transform(trans, &my_transform);
+
+	//print_tf_transform(&my_transform, "inside pca");
+
+		
+		
+// 		geometry_msgs::Pose3D pose;
+// 		pose.setRotation(quat);
+// 		pose.setOrigin(trans);
+// 				
+// 		geometry_msgs::Vector3 size(max_pt.x - min_pt.x, max_pt.y-min_pt.y, max_pt.z-min_pt.z);
+// 
+// 		from_affine3f_to_tf_transform(&trans, &_trf); //get the tf transform	
+// 		string s;
+// 		print_tf_transform(&_trf, s);
+// 		
+// 
+// 		_br->sendTransform(StampedTransform(stf, Time::now(), _fixed_frame_id_tmp, "STF"));
+
+		
+// 		//visualization point cloud
+// 		// draw the cloud and the box
+// 		pcl::visualization::PCLVisualizer viewer;
+//  		viewer.setBackgroundColor (0, 0, 0);
+// 		viewer.addPointCloud(target_pc, "original");
+// 		
+// 		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr point_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGBA>);
+// 		point_cloud_ptr->points.push_back (max_pt);
+// 		point_cloud_ptr->points.push_back (min_pt);
+// 		point_cloud_ptr->width = (int) point_cloud_ptr->points.size ();
+// 		point_cloud_ptr->height = 1;
+// 		
+// 		// move the points to the that reference frame
+// 		p2w.block<3,3>(0,0) = eigDx.transpose();
+// 		p2w.block<3,1>(0,3) = -1.f * (p2w.block<3,3>(0,0) * centroid.head<3>());
+// 		pcl::transformPointCloud(*point_cloud_ptr, cPoints, p2w);
+// 		
+//  		pcl::visualization::PointCloudColorHandlerCustom<PointT> Model_keypoints_color_handler2 (point_cloud_ptr, 0,0, 255);
+//  		viewer.addPointCloud (point_cloud_ptr, Model_keypoints_color_handler2, "max and min points");
+// 
+// 
+// 		viewer.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 15, "max and min");
+// 
+// 		pcl::visualization::PointCloudColorHandlerCustom<PointT> Model_keypoints_color_handler3 (point_cloud_ptr, 0,0, 0);
+// 		viewer.addCube(tfinal, qfinal, max_pt.x - min_pt.x, max_pt.y - min_pt.y, max_pt.z - min_pt.z);
+// 		viewer.spin();
+// 			    
+// // 
+// 		while (!viewer.wasStopped ())
+// 		{ viewer.spinOnce (100);}
+
+		
+		
+		
+		  
+
+		
+		
+		
+	
+// 		pcl::visualization::PCLVisualizer viewer1 ("Minimum and Maximum Points");
+// 		viewer1.addPointCloud (target_pc, "original");
+// 		pcl::visualization::PointCloudColorHandlerCustom<PointT> Model_keypoints_color_handler2 (point_cloud_ptr, 0,0, 255);
+// 		viewer1.addPointCloud (uniform_keypoints, Model_keypoints_color_handler2, "keypoints");
+// 		viewer1.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "keypoints");
+// 		viewer1.setBackgroundColor (255, 255, 255);
+// 		while (!viewer1.wasStopped ())
+// 		{ viewer1.spinOnce (100);}
+// 		
+		
+		
+		
+		
+                /* _____________________________________
+                   |                                   |
+                   |  end working area for grasping  |
+                   |___________________________________| */
+		//////////////////////////////////
+		
+		
+		boost::shared_ptr<PointCloud<PointT> > uniform_keypoints (new PointCloud<PointT>);
+		boost::shared_ptr<pcl::PointCloud<int> >uniform_sampling_indices (new PointCloud<int>);
+		keypoint_selection( target_pc, 
+				    uniform_sampling_size,
+				    uniform_keypoints,
+				    uniform_sampling_indices);
+		
+		if (_verb)
+		{
+		    ROS_INFO ("uniform_sampling_size = %f", uniform_sampling_size);
+		    ROS_INFO ("number of keypoints = %i", uniform_keypoints->points.size());
+		}
+// 		 pcl::search::KdTree<pcl::PointXYZRGBA>::Ptr kdtree (new pcl::search::KdTree<pcl::PointXYZRGBA>);
+// 				 
+// // 		pcl::search::KdTree<PointT>::Ptr kdtree (new pcl::search::KdTree<PointT>);
+// 		NormalEstimation<pcl::PointXYZRGBA, Normal> normal_estimation;
+// 		normal_estimation.setInputCloud (uniform_keypoints);
+// 		normal_estimation.setSearchMethod (kdtree);
+// 		normal_estimation.setRadiusSearch ( 0.05);
+// 		PointCloud<Normal>::Ptr Keypoints_with_normal (new PointCloud< Normal>);
+// 		normal_estimation.compute (*Keypoints_with_normal);
+ 		
+		
+		
+ 		//visualization point cloud
+// 		pcl::visualization::PCLVisualizer viewer1 ("keypoints selection");
+// 		viewer1.addPointCloud (target_pc, "original");
+// 		pcl::visualization::PointCloudColorHandlerCustom<PointT> Model_keypoints_color_handler2 (uniform_keypoints, 0,0, 255);
+// 		viewer1.addPointCloud (uniform_keypoints, Model_keypoints_color_handler2, "keypoints");
+// 		viewer1.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "keypoints");
+// 		viewer1.setBackgroundColor (255, 255, 255);
+// 		while (!viewer1.wasStopped ())
+// 		{ viewer1.spinOnce (100);}
+// 		
+// 		//visualization surface normal estimation for the given point cloud
+// 		pcl::visualization::PCLVisualizer viewer2 ("keypoints selection");
+// 		viewer2.addPointCloud (target_pc, "original");
+// 		viewer2.addPointCloud (uniform_keypoints, Model_keypoints_color_handler2, "keypoints");
+// 		viewer2.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "keypoints");
+// 		viewer2.setBackgroundColor (255, 255, 255);
+// 		viewer2.addPointCloudNormals<pcl::PointXYZRGBA, pcl::Normal> (uniform_keypoints, Keypoints_with_normal, 1, 0.05, "normals");
+// 		viewer2.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 255,0, 0, "normals"); 
+// 		while (!viewer2.wasStopped ())
+// 		{ viewer2.spinOnce (100);}
+		
+		//select keypoints
+// 		int numer_of_keypoints =subsample_spinimages;
+// 	    	size_t subsample_step = (uniform_sampling_indices.size())/numer_of_keypoints; //to compute the subsampling step;
+// 		pcl::PointCloud<int> new_sample;
+// 		new_sample=uniform_sampling_indices;
+// 		new_sample.clear();
+// 		int j=0;
+// 		ROS_INFO("size of selected point=%i",uniform_sampling_indices.size() );
+// 		ROS_INFO("numer_of_keypoints=%i", numer_of_keypoints);
+// 		ROS_INFO("subsample_step=%i", subsample_step);
+// 		for (size_t i =subsample_step ; (i <= numer_of_keypoints*subsample_step)and (i<uniform_sampling_indices.size()); i += subsample_step) // 
+// 		{
+// 		  ROS_INFO("sampled_indices.at(%i)=%i",i, uniform_sampling_indices.at(i));
+// 		  new_sample.points.push_back(uniform_sampling_indices.at(i)); 
+// 		  ROS_INFO("new_indices.at(%i)=%i",i, new_sample.at(j));
+// 		  j++;
+// 		}
+// 		ROS_INFO("size of new_sample =%i", new_sample.points.size());
+// 		boost::shared_ptr<PointCloud<PointT> > model_keypoints2 (new PointCloud<PointT>);
+// 		pcl::copyPointCloud (*target_pc, new_sample.points, *model_keypoints2);
+// 		pcl::visualization::PointCloudColorHandlerCustom<PointT> Model_keypoints_color_handler3 (model_keypoints2, 0,0, 255);
+// 		viewer2.addPointCloud (model_keypoints2, Model_keypoints_color_handler3, "keypoints2");
+// 		viewer2.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 10, "keypoints2");
+// 		viewer2.setBackgroundColor (255, 255, 255);
+// 		while (!viewer2.wasStopped ())
+// 		{ viewer2.spinOnce (100);}
+		
+		
+		
+		
+		
+// 		//  Downsample Clouds to Extract keypoints ( uniformSampling )	
+// 		ROS_INFO("uniform_sampling_size = %f", uniform_sampling_size);
+// // 		boost::shared_ptr<PointCloud<PointT> > model_keypoints (new PointCloud<PointT>);
+// 		pcl::PointCloud<int> sampled_indices;
+// 		pcl::UniformSampling<PointT> uniform_sampling;// 
+// 		uniform_sampling.setInputCloud (target_pc);
+// 		uniform_sampling.setRadiusSearch (uniform_sampling_size);
+// 		uniform_sampling.compute (sampled_indices);
+// 		pcl::copyPointCloud (*target_pc, sampled_indices.points, *model_keypoints);
+// 		std::cout << "Model total points: " << target_pc->size () << "; Selected Keypoints: " << model_keypoints->size () << std::endl;
+// 		//visualization
+// 		pcl::visualization::PCLVisualizer viewer2 ("keypoints selection");
+// 		viewer2.addPointCloud (target_pc, "original");
+// 		pcl::visualization::PointCloudColorHandlerCustom<PointT> Model_keypoints_color_handler2 (model_keypoints, 255,0, 0);
+// 		viewer2.addPointCloud (model_keypoints, Model_keypoints_color_handler2, "keypoints");
+// 		viewer2.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 15, "keypoints");
+// 			
+// 		//select keypoints
+// 		int numer_of_keypoints =subsample_spinimages;
+// 	    	size_t subsample_step = (sampled_indices.size())/numer_of_keypoints; //to compute the subsampling step;
+// 		pcl::PointCloud<int> new_sample;
+// 		new_sample=sampled_indices;
+// 		new_sample.clear();
+// 		int j=0;
+// 		ROS_INFO("size of selected point=%i",sampled_indices.size() );
+// 		ROS_INFO("numer_of_keypoints=%i", numer_of_keypoints);
+// 		ROS_INFO("subsample_step=%i", subsample_step);
+// 		for (size_t i =subsample_step ; (i <= numer_of_keypoints*subsample_step)and (i<sampled_indices.size()); i += subsample_step) // 
+// 		{
+// 		  ROS_INFO("i=%i", i);
+// 		  ROS_INFO("sampled_indices.at(i)=%i", sampled_indices.at(i));
+// 		  new_sample.points.push_back(sampled_indices.at(i)); 
+// 		  ROS_INFO("new_indices.at(i)=%i", new_sample.at(j));
+// 		  j++;
+// 		}
+// 		ROS_INFO("size of new_sample =%i", new_sample.points.size());
+// 		boost::shared_ptr<PointCloud<PointT> > model_keypoints2 (new PointCloud<PointT>);
+// 		pcl::copyPointCloud (*target_pc, new_sample.points, *model_keypoints2);
+// 		pcl::visualization::PointCloudColorHandlerCustom<PointT> Model_keypoints_color_handler3 (model_keypoints2, 0,0, 255);
+// 		viewer2.addPointCloud (model_keypoints2, Model_keypoints_color_handler3, "keypoints2");
+// 		viewer2.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 10, "keypoints2");
+// 		viewer2.setBackgroundColor (255, 255, 255);
+// 		while (!viewer2.wasStopped ())
+// 		{ viewer2.spinOnce (100);}
+// 		
+                    //////////////////////////////////////
+                    //
+                    //sampling approach
+                    //
+                    //////////////////////////////////////
+                    
+//                 if (!estimateSpinImages( target_pc, 
+//                             0.01 /*downsampling_voxel_size*/, 
+//                             0.05 /*normal_estimation_radius*/,
+//                             spin_image_width /*spin_image_width*/,
+//                             0.0 /*spin_image_cos_angle*/,
+//                             1 /*spin_image_minimum_neighbor_density*/,
+//                             spin_image_support_lenght /*spin_image_support_lenght*/,
+//                             msg_out,
+//                             subsample_spinimages /*subsample spinimages*/
+//                             ))
+//                 {
+//                     pp.error(std::ostringstream().flush() << "Could not compute spin images");
+//                     pp.printCallback();
+//                     return;
+// 
+//                 }
+                    //////////////////////////////////////
+                    //
+                    //voxel approach
+                    //
+                    //////////////////////////////////////
+                if (!estimateSpinImages2(target_pc, 
+                            0.01 /*downsampling_voxel_size*/, 
+                            0.05 /*normal_estimation_radius*/,
+                            spin_image_width /*spin_image_width*/,
+                            0.0 /*spin_image_cos_angle*/,
+                            1 /*spin_image_minimum_neighbor_density*/,
+                            spin_image_support_lenght/*spin_image_support_lenght*/,
+                            msg_out,
+				uniform_sampling_indices
+                            ))		    
+                {
+                    pp.error(std::ostringstream().flush() << "Could not compute spin images");
+			if (_verb)       
+			{
+			pp.printCallback();
+			}
+                    return;
+                }
+
+                
+		pp.info(std::ostringstream().flush() << "Computed " << msg_out->size() << " spin images for given point cloud. ");
+		
+// 		visulazeObjectViewSpinImageMatlab (*msg_out, "/home/hamidreza/VisualizedSpinImages.txt");
+		
+                //get toc
+                ros::Duration duration = ros::Time::now() - beginProc;
+                double duration_sec = duration.toSec();
+                pp.info(std::ostringstream().flush() << "Compute Spin-images for given point cloud took " << duration_sec << " secs");
+
+                /* _____________________________________________
+                   |                                            |
+                   |  Write features to DB based on TID and VID |
+                   |____________________________________________| */
+
+                beginProc = ros::Time::now();
+
+                //Declare SITOV (Spin Images of Tracked Object View)
+                SITOV _sitov;
+
+                //Declare RTOV (Representation of Tracked Object View)
+                RTOV _rtov;
+                _rtov.track_id = msg->track_id;
+                _rtov.view_id = msg->view_id;
+
+		pp.info(std::ostringstream().flush() << "Track_id = " << msg->track_id << "\tView_id = " << msg->view_id );
+		
+		
+                //declare the RTOV complete variable
+		race_perception_msgs::CompleteRTOV _crtov;
+		_crtov.track_id = msg->track_id;
+		_crtov.view_id = msg->view_id;
+		_crtov.ground_truth_name = msg->ground_truth_name.c_str();
+		_crtov.pose_stamped = msg -> pose_stamped;
+		_crtov.dimensions = msg -> dimensions;
+		pp.info(std::ostringstream().flush() << "object_pose.x = %f " << msg -> pose_stamped.pose.position.x);
+		pp.info(std::ostringstream().flush() << "object_pose.y = %f " << msg -> pose_stamped.pose.position.y);
+		pp.info(std::ostringstream().flush() << "object_pose.z = %f " << msg -> pose_stamped.pose.position.z);
+                //Add the Spin Images in msg_out to sitovs to put in the DB
+                for (size_t i = 0; i < msg_out->size(); i++)
+                {
+                    _sitov = msg_out->at(i); //copy spin images
+                    _sitov.track_id = msg->track_id; //copy track_id
+                    _sitov.view_id = msg->view_id; //copy view_id
+                    _sitov.spin_img_id = i; //copy spin image id
+
+                    //Addd sitov to completertov sitov list
+                    _crtov.sitov.push_back(_sitov);
+
+                    if (msg->is_key_view) //add sitovs to the DB only if this is a key view
+                    {
+                        //Serialize to add to DB
+                        uint32_t serial_size = ros::serialization::serializationLength(_sitov);
+                        boost::shared_array<uint8_t> buffer(new uint8_t[serial_size]);
+                        PerceptionDBSerializer<boost::shared_array<uint8_t>, SITOV>::serialize(buffer, _sitov, serial_size);	
+                        leveldb::Slice s((char*)buffer.get(), serial_size);
+                        std::string key = _pdb->makeSIKey(key::SI, msg->track_id, msg->view_id, i );
+
+                        //Put slice to the DB
+                        _pdb->put(key, s); 
+
+                        //Add to the list of SITOV keys for this RTOV
+                        _rtov.sitov_keys.push_back(key);
+                        buffer.reset();
+                    }
+
+                }
+
+
+                pp.info(std::ostringstream().flush() << "Is keyview: " << (int)msg->is_key_view);
+                //Add RTOV to the DB (only if this is a key view)
+                if (msg->is_key_view)                 
+                {
+                    uint32_t serial_size = ros::serialization::serializationLength(_rtov);
+                    boost::shared_array<uint8_t> buffer(new uint8_t[serial_size]);
+                    PerceptionDBSerializer<boost::shared_array<uint8_t>, RTOV>::serialize(buffer, _rtov, serial_size);	
+                    leveldb::Slice s((char*)buffer.get(), serial_size);
+                    std::string key = _pdb->makeKey(key::RV, msg->track_id, msg->view_id);
+
+                    //Put slice to the db
+                    _pdb->put(key, s);
+                    buffer.reset();
+                }
+
+                //publish a RTOV msg for recognition
+                //_p_pcin_publisher->publish (_rtov);
+
+                //Publish the CompleteRTOV to recognition
+                _p_crtov_publisher->publish (_crtov);
+
+                //Toc
+                duration = (ros::Time::now() - beginProc);
+                duration_sec = duration.toSec();
+                pp.info(std::ostringstream().flush() << "Write the features to DB took " << duration_sec << " secs");
+
+                //print the callback report
+		//cout<< "verb ="<< _verb;
+		//if (_verb)
+		//{
+		    pp.printCallback();
+		//}
+                //dealocate pointers
+                target_pc.reset();
+                msg_out.reset();
+
+                cd->run();//cycle debug run
+            }
+
+            //void callback(const race_perception_msgs::PCTOV::ConstPtr& msg)
+            //{
+            //PrettyPrint pp;
+            ////cd->run();//cycle debug run
+
+            //[> ________________________________________________
+            //|                                                 |
+            //|  Compute the Spin-Images for given point cloud |
+            //|_______________________________________________| */
+            //ros::Time beginProc = ros::Time::now();
+
+            ////Declare a boost share ptr to the pointCloud
+            //boost::shared_ptr<PointCloud<PointT> > target_pc (new PointCloud<PointT>);
+            ////Call the library function for testing
+            //pcl::fromROSMsg(msg->point_cloud,*target_pc );
+
+            ////Declare a boost share ptr to the spin image msg
+            //boost::shared_ptr< vector <SITOV> > msg_out;
+            //msg_out = (boost::shared_ptr< vector <SITOV> >) new (vector <SITOV>);
+
+            //if (!estimateSpinImages( target_pc, 
+            //0.01 [>downsampling_voxel_size<], 
+            //0.05 [>normal_estimation_radius<],
+            //8 [>spin_image_width<],
+            //0.0 [>spin_image_cos_angle<],
+            //1 [>spin_image_minimum_neighbor_density<],
+            //0.2 [>spin_image_support_lenght<],
+            //msg_out,
+            //30
+            //))
+            //{
+            //pp.error(std::ostringstream().flush() << "Could not compute spin image");
+            //}
+
+            //pp.info(std::ostringstream().flush() << msg_out->size()<< " Spin-images computed for given point cloud");
+
+            //ros::Duration duration = ros::Time::now() - beginProc;
+            //double duration_sec = duration.toSec();
+            //pp.info(std::ostringstream().flush() << "Compute Spin-images for given point cloud took " << duration_sec << " secs");
+
+            //[> _____________________________________________
+            //|                                            |
+            //|  Wirte feature to DB based on TID and VID |
+            //|__________________________________________| */
+
+            //beginProc = ros::Time::now();
+
+            ////Declare SITOV
+            //SITOV _sitov;
+
+            ////Declare RTOV
+            //RTOV _rtov;
+            //_rtov.track_id = msg->track_id;
+            //_rtov.view_id = msg->view_id;
+            //// 				if (msg->is_key_view)
+            //// 				{
+            //// 				    _rtov.is_key_view = true;
+            //// 				}
+
+
+            //for (size_t i = 0; i < msg_out->size(); i++)
+            //{
+
+            //_sitov = msg_out->at(i);
+            //_sitov.track_id = msg->track_id;
+            //_sitov.view_id = msg->view_id;
+            //_sitov.spin_img_id = i;
+
+            //uint32_t serial_size = ros::serialization::serializationLength(_sitov);
+            //boost::shared_array<uint8_t> buffer(new uint8_t[serial_size]);
+            //PerceptionDBSerializer<boost::shared_array<uint8_t>, SITOV>::serialize(buffer, _sitov, serial_size);	
+            //leveldb::Slice s((char*)buffer.get(), serial_size);
+            //std::string key = _pdb->makeSIKey(key::SI, msg->track_id, msg->view_id, i );
+
+            ////Put slice to the db
+            //_pdb->put(key, s); 
+            ////create a list of key of spinimage
+            //_rtov.sitov_keys.push_back(key);
+
+            //}
+
+            //uint32_t serial_size = ros::serialization::serializationLength(_rtov);
+
+            //boost::shared_array<uint8_t> buffer(new uint8_t[serial_size]);
+            //PerceptionDBSerializer<boost::shared_array<uint8_t>, RTOV>::serialize(buffer, _rtov, serial_size);	
+
+            //leveldb::Slice s((char*)buffer.get(), serial_size);
+
+            //std::string key = _pdb->makeKey(key::RV, msg->track_id, msg->view_id);
+
+            ////Put slice to the db
+            //_pdb->put(key, s);
+
+            ////publish a RTOV msg for recognition
+            //_p_pcin_publisher->publish (_rtov);
+
+            //duration = (ros::Time::now() - beginProc);
+            //duration_sec = duration.toSec();
+            //pp.info(std::ostringstream().flush() << "Write the features to DB took " << duration_sec << " secs");
+            ////ROS_INFO("FeatureExtraction-Publish a _rtov msg");
+            //pp.printCallback();
+            //}
+
+            /* _________________________________
+               |                                 |
+               |           ACCESSORS             |
+               |_________________________________| */
+	    
+	    
+int set_neat_visualization_marker_array_for_manipulation(string object_frame_id, unsigned int TID )
+{
+
+  //STEP 1: need to get the position of the object so we can draw
+  //text nearby
+//   tf::StampedTransform stf; //the transform
+//   //std::string tracker_frame_id =  msg->header.frame_id;
+//   std::string tracker_frame_id = "/perception/pipeline" + boost::lexical_cast<std::string>(msg->track_id) + "/tracker";
+
+  ROS_INFO ("set_neat_visualization_marker_array_for_manipulation: object_frame_id = %s", object_frame_id.c_str());
+  
+  visualization_msgs::MarkerArray marker_array; 
+  geometry_msgs::Point p;
+  double duration = 0;
+  bool locked = true;
+  duration=5;
+  bool finish= true;
+	
+  /* _________________________________
+      |                                 |
+      |           DRAW XYZ AXES         |
+      |_________________________________| */
+  if (1)
+  {	
+	  visualization_msgs::Marker marker;
+	  double axis_dimension = 0.9;
+	  marker.header.frame_id = object_frame_id.c_str();
+	  marker.header.stamp = ros::Time();
+
+	  //marker.frame_locked = locked;
+	  marker.type = visualization_msgs::Marker::LINE_STRIP;
+	//  if (finish)
+	//	  marker.action = visualization_msgs::Marker::DELETE;
+	 // else
+		  marker.action = visualization_msgs::Marker::ADD;
+
+	  marker.scale.x = 0.05; marker.scale.y = 0.5; marker.scale.z = 4;
+	  marker.scale.x = 05; marker.scale.y = 0.5; marker.scale.z = 4; 
+	  marker.lifetime = Duration(duration);
+
+	  
+	  //X axis
+	  marker.ns = "axes_x";
+	  marker.id = TID;
+	  marker.color.r = 1.0; marker.color.g = 0.0;	marker.color.b = 0.0; marker.color.a = 1.0; //red color
+	  marker.points.erase(marker.points.begin(), marker.points.end());
+	  p.x = 0; p.y = 0; p.z = 0; marker.points.push_back(p);
+	  p.x = 1 * axis_dimension; p.y = 0; p.z = 0; marker.points.push_back(p);
+	  marker_array.markers.push_back(marker);
+
+	  //Y axis
+	  marker.ns = "axes_y";
+	  marker.id = TID;
+	  marker.color.r = 0.0; marker.color.g = 1.0;	marker.color.b = 0.0; marker.color.a = 1.0; //green color
+	  marker.points.erase(marker.points.begin(), marker.points.end());
+	  p.x = 0; p.y = 0; p.z = 0; marker.points.push_back(p);
+	  p.x = 0; p.y = 1 * axis_dimension; p.z = 0; marker.points.push_back(p);
+	  marker_array.markers.push_back(marker);
+
+	  //Z axis
+	  marker.ns = "axes_z";
+	  marker.id = TID;
+	  marker.color.r = 0.0; marker.color.g = 0.0;	marker.color.b = 1.0; marker.color.a = 1.0; //blue color
+	  marker.points.erase(marker.points.begin(), marker.points.end());
+	  p.x = 0; p.y = 0; p.z = 0; marker.points.push_back(p);
+	  p.x = 0; p.y = 0; p.z = 1 * axis_dimension; marker.points.push_back(p);
+	  marker_array.markers.push_back(marker);
+  }
+
+
+  
+  
+  
+  /* _________________________________
+	   |                                 |
+	   |         DRAW TEXT INFO          |
+	   |_________________________________| */
+// 	if (1)
+// 	{
+// 		visualization_msgs::Marker marker;
+// 		marker.header.frame_id = _tracker_frame_id;
+// 		//marker.header.frame_id = _fixed_frame_id;
+// 		marker.frame_locked = locked;
+// 		marker.header.stamp = ros::Time();
+// 		marker.ns = "information";
+// 		marker.id = _track_id;
+// 		marker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+// 		marker.lifetime = Duration(duration);
+// 		marker.action = visualization_msgs::Marker::ADD;
+// 		//if (finish)
+// 		//marker.action = visualization_msgs::Marker::DELETE;
+// 		//else
+// 
+// 		//marker.pose = _tracked_object_msg.bounding_box.pose_stamped.pose;
+// 
+// 		//marker.pose.position.x = 0 + marker.pose.position.x*0.9 + 0;
+// 		//marker.pose.position.y = 0 + marker.pose.position.y*0.9 + 0.1;
+// 		marker.pose.position.z = _tracked_object_msg.bounding_box.dimensions.z/2+0.1;
+// 		marker.scale.z = 0.02; 
+// 		//marker.color.r  = 1; marker.color.g  = 1; marker.color.b  = 1; marker.color.a = 1;
+// 
+// 		if (finish)
+// 		{
+// 			marker.color.r  = 0.5; marker.color.g  = 0; marker.color.b  = 0; marker.color.a = 1;
+// 		}
+// 		else
+// 		{
+// 			marker.color.r  = 0; marker.color.g  = 0; marker.color.b  = 0; marker.color.a = 1;
+// 		}
+// 
+// 		marker.lifetime = Duration(duration);
+// 
+// 		char tmp_str[255]; 
+// 		//sprintf(tmp_str,"\nfr=%0.1f ad=%0.2f vel=%0.2f t=%0.1f did=%d", _fit_ratio, _accumulated_distance, _velocity, _time_since_velocity_computation, _demonstrator_id);
+// 		sprintf(tmp_str,"%0.1f", _fit_ratio);
+// 
+// 		marker.text = "TID" + boost::lexical_cast<std::string>(_track_id) + " V" + boost::lexical_cast<std::string>(view_count) + "(" + tmp_str + ")";
+// 
+// 		//marker.text.append(tmp_str);
+// 		//char tmp_str1[255]; 
+// 		//sprintf(tmp_str1,"\nr=%0.1f p=%0.1f y=%0.1f",diff_roll, diff_pitch, diff_yaw);
+// 		//marker.text.append(tmp_str1);
+// 
+// 		marker.text.append("\n");
+// 
+// 		if (_state_is_moving)
+// 		{
+// 			marker.text.append("[M");
+// 		}
+// 		else
+// 		{
+// 			marker.text.append("[S");
+// 		}
+// 
+// 		//marker.text.append("\n");
+// 		if ((ros::Time::now() - _point_cloud_sent_tic).toSec() < 1.0 && (ros::Time::now() - _key_view_tic).toSec() < 1.0) 
+// 			marker.text.append(",C,K]");
+// 		else if ((ros::Time::now() - _point_cloud_sent_tic).toSec() < 1.0) 
+// 			marker.text.append(",C,_]");
+// 		else
+// 			marker.text.append(",_,_]");
+// 
+// 		if (finish)	marker.text.append("\n(TRACKING LOST)");
+// 
+// 
+// 		marker_array.markers.push_back(marker);
+// 	}
+
+// 	/* _________________________________
+// 	   |                                 |
+// 	   |             DRAW WIREFRAME      |
+// 	   |_________________________________| */
+// 	if (1)
+// 	{
+// 		visualization_msgs::Marker marker;
+// 		marker.header.frame_id = _tracker_frame_id;
+// 		marker.header.stamp = ros::Time();
+// 
+// 		marker.ns = "wireframe";
+// 		marker.id = _track_id;
+// 		marker.frame_locked = locked;
+// 		marker.type = visualization_msgs::Marker::LINE_LIST;
+// 		//if (finish)
+// 		//marker.action = visualization_msgs::Marker::DELETE;
+// 		//else
+// 		marker.action = visualization_msgs::Marker::ADD;
+// 		marker.lifetime = Duration(duration);
+// 
+// 		//marker.pose = _tracked_object_msg.bounding_box.pose_stamped.pose;
+// 
+// 		marker.scale.x = 0.005; 
+// 		double x = _tracked_object_msg.bounding_box.dimensions.x/2; 
+// 		double y = _tracked_object_msg.bounding_box.dimensions.y/2; 
+// 		double z = _tracked_object_msg.bounding_box.dimensions.z/2; 
+// 
+// 		_color.a = 0.5;
+// 		marker.color = _color;
+// 		marker.color.r = 0.5;
+// 		marker.color.g = 0.5;
+// 		marker.color.b = 0.5;
+// 		//marker
+// 		if (finish)
+// 		{
+// 			marker.color.r = 0.1;
+// 			marker.color.g = 0.1;
+// 			marker.color.b = 0.1;
+// 		}
+// 
+// 		p.x =  x; p.y =  y; p.z =  z; marker.points.push_back(p);
+// 		p.x = -x; p.y =  y; p.z =  z; marker.points.push_back(p);
+// 		p.x =  x; p.y =  y; p.z = -z; marker.points.push_back(p);
+// 		p.x = -x; p.y =  y; p.z = -z; marker.points.push_back(p);
+// 		p.x =  x; p.y =  y; p.z = -z; marker.points.push_back(p);
+// 		p.x =  x; p.y =  y; p.z =  z; marker.points.push_back(p);
+// 		p.x = -x; p.y =  y; p.z = -z; marker.points.push_back(p);
+// 		p.x = -x; p.y =  y; p.z =  z; marker.points.push_back(p);
+// 
+// 		p.x =  x; p.y =  -y; p.z =  z; marker.points.push_back(p);
+// 		p.x = -x; p.y =  -y; p.z =  z; marker.points.push_back(p);
+// 		p.x =  x; p.y =  -y; p.z = -z; marker.points.push_back(p);
+// 		p.x = -x; p.y =  -y; p.z = -z; marker.points.push_back(p);
+// 		p.x =  x; p.y =  -y; p.z = -z; marker.points.push_back(p);
+// 		p.x =  x; p.y =  -y; p.z =  z; marker.points.push_back(p);
+// 		p.x = -x; p.y =  -y; p.z = -z; marker.points.push_back(p);
+// 		p.x = -x; p.y =  -y; p.z =  z; marker.points.push_back(p);
+// 
+// 		p.x =  x; p.y =  y; p.z =  z; marker.points.push_back(p);
+// 		p.x =  x; p.y = -y; p.z =  z; marker.points.push_back(p);
+// 		p.x =  x; p.y =  y; p.z = -z; marker.points.push_back(p);
+// 		p.x =  x; p.y = -y; p.z = -z; marker.points.push_back(p);
+// 
+// 		p.x = -x; p.y =  y; p.z =  z; marker.points.push_back(p);
+// 		p.x = -x; p.y = -y; p.z =  z; marker.points.push_back(p);
+// 		p.x = -x; p.y =  y; p.z = -z; marker.points.push_back(p);
+// 		p.x = -x; p.y = -y; p.z = -z; marker.points.push_back(p);
+// 
+// 		marker_array.markers.push_back(marker);
+// 	}
+// 
+// 
+// 	/* _________________________________
+// 	   |                                 |
+// 	   |             DRAW BBOX           |
+// 	   |_________________________________| */
+// 	if (1)
+// 	{
+// 		visualization_msgs::Marker marker;
+// 		marker.header.frame_id = _tracker_frame_id;
+// 		marker.header.stamp = ros::Time();
+// 
+// 		marker.ns = "boundingbox";
+// 		marker.id = _track_id;
+// 		marker.type = visualization_msgs::Marker::CUBE;
+// 		marker.frame_locked = locked;
+// 		//if (finish)
+// 		//marker.action = visualization_msgs::Marker::DELETE;
+// 		//else
+// 		marker.action = visualization_msgs::Marker::ADD;
+// 		marker.lifetime = Duration(duration);
+// 
+// 		//marker.pose = _tracked_object_msg.bounding_box.pose_stamped.pose;
+// 
+// 		marker.scale.x = _tracked_object_msg.bounding_box.dimensions.x; 
+// 		marker.scale.y = _tracked_object_msg.bounding_box.dimensions.y; 
+// 		marker.scale.z = _tracked_object_msg.bounding_box.dimensions.z; 
+// 
+// 		_color.a = 0.1;
+// 		marker.color = _color;
+// 		if (finish)
+// 		{
+// 			marker.color.r = 0.9;
+// 			marker.color.g = 0.0;
+// 			marker.color.b = 0.0;
+// 		}
+// 
+// 		marker_array.markers.push_back(marker);
+// 	}
+
+	neat_marker_publisher.publish(marker_array);
+	return 1;
+
+
+    }
+            void rot_mat(int arg1);
+
+
+    };
+
+    
+    
+    class FeatureExtractionNodelet: public FeatureExtraction<pcl::PointXYZRGBA>{};
+    PLUGINLIB_DECLARE_CLASS(race_feature_extraction, FeatureExtractionNodelet, race_feature_extraction::FeatureExtractionNodelet, nodelet::Nodelet);
+
+}//end feature_extraction namespace
+#endif
+
+

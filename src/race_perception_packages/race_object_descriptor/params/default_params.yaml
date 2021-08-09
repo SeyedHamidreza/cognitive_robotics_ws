@@ -1,0 +1,4 @@
+#Default parameters for Hnt
+verbose: true
+param2: "from_file_value"
+
