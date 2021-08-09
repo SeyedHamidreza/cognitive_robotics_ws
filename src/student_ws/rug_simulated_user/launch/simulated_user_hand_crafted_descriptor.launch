@@ -1,0 +1,158 @@
+<?xml version="1.0"?>
+<!-- This is a launch file for an example on how to bringup of the race perception architecture-->
+<launch>
+<!-- this flag will configure the system to run with nodes or nodelets-->
+<arg name="use_nodelets" default="0"/>
+<arg name="use_standalone" default="false"/>
+<!--<arg name="use_pr2" default="0"/>-->
+<arg name="pdb_source" default="default_pdb"/>
+
+<group ns="/perception">
+
+	<!-- _________________________________-->
+	<!--|                                 |-->
+	<!--|             Memory 		      |-->
+	<!--|_________________________________|-->
+
+		<!--Launches a race_perception_db node(let) -->
+	<include file="$(find race_perception_db)/launch/bringup.launch">
+	    <arg name="use_nodelets" value="$(arg use_nodelets)" />
+	    <arg name="pdb_source" value="$(arg pdb_source)" />
+	    <arg name="name" value="perception_db" />-->
+	</include> 
+
+	
+	<!-- Launches the nodelet_manager -->
+	<group if="$(arg use_nodelets)">
+	    <node pkg="nodelet" type="nodelet" name="nodelet_manager" args="manager" output="screen" required="true">
+		<param name="num_worker_threads" value="10"/>
+	    </node>
+	</group>
+	
+	<!-- _________________________________-->
+	<!--|                                 |-->
+	<!--|         Global Param            |-->
+	<!--|_________________________________|-->	
+	
+
+		<!-- *****************************************************************  -->
+		<!--       set name_of_approach and number of experiments parameters    -->
+		<!-- *****************************************************************  -->
+
+		<!-- name of approach -->
+		<arg name="name_of_approach" default="COR_2021_HC" />
+		<param name="/perception/name_of_approach" type="string" value = "$(arg name_of_approach)"/>
+
+		<!-- total_number_of_experiments params -->
+		<arg name="total_number_of_experiments" default="10" />
+		<param name="/total_number_of_experiments" type="int" value = "$(arg total_number_of_experiments)"/>
+
+		<!-- random_sequence_generator 0 = FLASE, 1 = TRUE-->
+		<arg name="random_sequence_generator" default="1" />
+		<param name="/perception/random_sequence_generator" type="bool" value = "$(arg random_sequence_generator)"/>
+
+
+		<!-- ****************************************  -->
+		<!--       set dataset_path parameter          -->
+		<!-- ****************************************  -->
+
+			<!-- restaurant_object_dataset : "$(env HOME)/datasets/restaurant_object_dataset/"; -->
+			<!-- modelnet10 : "$(env HOME)/datasets/modelnet10/"; -->
+			<arg name="dataset_path" default="$(env HOME)/datasets/restaurant_object_dataset/" />				
+			<param name="/perception/dataset_path" type="string" value = "$(arg dataset_path)"/>
+
+		<!-- ****************************************  -->
+		<!--       object descriptor parameters        -->
+		<!-- ****************************************  -->
+		
+			<!-- object_descriptor: possible options are including [GOOD, ESF, VFH, GRSD] -->
+			<arg name="object_descriptor" default="GOOD" />
+			<param name="/perception/object_descriptor" type="string" value = "$(arg object_descriptor)"/>
+
+
+			<!-- GOOD descriptor params -->
+			<arg name="number_of_bins" default="50" />
+			<param name="/perception/number_of_bins" type="int" value = "$(arg number_of_bins)"/>
+
+			<!-- VFH descriptor params -->
+			<arg name="normal_estimation_radius" default="0.05" />
+			<param name="/perception/normal_estimation_radius" type="double" value = "$(arg normal_estimation_radius)"/>
+
+		
+		<!-- ****************************************  -->
+		<!--       		distance functions		       -->
+		<!-- ****************************************  -->
+		
+			<!-- possible options are : chiSquared, kLDivergance, motyka,  divergence,  euclidean, intersection, manhattan,
+			cosine, dice, bhattacharyya, sorensen, canberra, pearson, neyman, gower -->
+			<arg name="distance_function" default="manhattan" />
+			<param name="/perception/distance_function" type="string" value = "$(arg distance_function)"/>
+
+		<!-- ****************************************  -->
+		<!--       		KNN parameters 			       -->
+		<!-- ****************************************  -->
+			
+			<!-- K param for KNN -->
+			<arg name="K_for_KNN" default="1" />
+			<param name="/perception/K_for_KNN" type="int" value = "$(arg K_for_KNN)"/>
+
+
+	<!-- ________________________________-->
+	<!--|                               |-->
+	<!--|   DO NOT CHANGE THESE PARAMS  |-->
+	<!--|_______________________________|-->
+	
+
+	<!-- Simulated teacher parameters. -->
+	<arg name="protocol_threshold" default="0.67" />
+	<param name="/perception/protocol_threshold" type="double" value = "$(arg protocol_threshold)"/>
+	<arg name="user_sees_no_improvment_const" default="100" />
+	<param name="/perception/user_sees_no_improvment_const" type="int" value = "$(arg user_sees_no_improvment_const)"/>
+	<arg name="window_size" default="3" />
+	<param name="/perception/window_size" type="int" value = "$(arg window_size)"/>
+
+	<!--recognition_threshold-->
+	<arg name="recognition_threshold" default="20000" />
+	<param name="/perception/recognition_threshold" type="double" value = "$(arg recognition_threshold)"/>
+		
+	<!-- GOOD shape descriptor params -->
+	<arg name="adaptive_support_lenght" default="0" />
+	<param name="/perception/adaptive_support_lenght" type="int" value = "$(arg adaptive_support_lenght)"/>
+	<arg name="off_line_flag" default="0" />
+	<param name="/perception/off_line_flag" type="int" value = "$(arg off_line_flag)"/>
+	<arg name="sign" default="1" />
+	<param name="/perception/sign" type="int" value = "$(arg sign)"/>
+	<arg name="global_image_width" default="0.2" />
+	<param name="/perception/global_image_width" type="double" value = "$(arg global_image_width)"/>
+			
+	<!-- Spin image parameters. -->
+	<arg name="spin_image_width" default="8" />
+	<param name="/perception/spin_image_width" type="int" value = "$(arg spin_image_width)"/>
+	<arg name="spin_image_support_lenght" default="0.1" />
+	<param name="/perception/spin_image_support_lenght" type="double" value = "$(arg spin_image_support_lenght)"/>
+	<arg name="subsample_spinimages" default="10" />
+	<param name="/perception/subsample_spinimages" type="int" value = "$(arg subsample_spinimages)"/>
+
+	<arg name="uniform_sampling_size" default="0.03" />
+	<param name="/perception/uniform_sampling_size" type="double" value = "$(arg uniform_sampling_size)"/>
+
+
+
+	<group ns="/pipeline1">
+			    
+		<!-- _________________________________-->
+		<!--|                                 |-->
+		<!--|       rug_simulated_user        |-->
+		<!--|_________________________________|-->
+            
+	    <include file="$(find rug_simulated_user)/launch/bringup_hand_crafted_descriptor.launch">
+            <arg name="use_nodelets" value="$(arg use_nodelets)" />
+            <arg name="name" value="rug_simulated_user_hand_crafted_descriptor" />
+	    </include>
+
+	</group>
+</group>
+
+</launch>
+
+

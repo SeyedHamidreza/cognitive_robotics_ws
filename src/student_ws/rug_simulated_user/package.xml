@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<package>
+	<name>rug_simulated_user</name>
+	<version>1.10.0</version>
+	<description>rug_simulated_user</description>
+	<author email="kasaei.hamidreza@gmail.com">hamidreza</author>
+	<maintainer email="kasaei.hamidreza@gmail.com">hamidreza</maintainer>
+
+	<license>BSD</license>  
+	<url type="website">https://hkasaei.github.io/</url>
+	
+	<buildtool_depend>catkin</buildtool_depend>
+	<build_depend>roscpp</build_depend>
+	<build_depend>rospy</build_depend>
+	<build_depend>std_msgs</build_depend>
+	<build_depend>roslib</build_depend>
+	<build_depend>nodelet</build_depend>
+	<build_depend>geometry_msgs</build_depend>
+	<build_depend>sensor_msgs</build_depend>
+	<build_depend>race_perception_msgs</build_depend>
+	<build_depend>race_perception_db</build_depend>
+	<build_depend>race_feature_extraction</build_depend>
+	<build_depend>race_object_descriptor</build_depend>
+ 	<build_depend>race_object_conceptualizer</build_depend>
+ 	<build_depend>race_perception_utils</build_depend>
+	<build_depend>pcl_conversions</build_depend>
+	<build_depend>rug_kfold_cross_validation</build_depend>
+	<build_depend>rug_deep_feature_extraction</build_depend>
+  	<build_depend>race_deep_learning_feature_extraction</build_depend>
+  	<build_depend>race_topic_modeling_services</build_depend>
+  	<build_depend>cv_bridge</build_depend>
+
+
+	<run_depend>roscpp</run_depend>
+	<run_depend>rospy</run_depend>
+	<run_depend>std_msgs</run_depend>
+	<run_depend>roslib</run_depend>
+	<run_depend>nodelet</run_depend>
+	<run_depend>geometry_msgs</run_depend>
+	<run_depend>sensor_msgs</run_depend>
+	<run_depend>race_perception_msgs</run_depend>
+	<run_depend>race_perception_db</run_depend>
+	<run_depend>race_feature_extraction</run_depend>
+	<run_depend>race_object_descriptor</run_depend>
+ 	<run_depend>race_object_conceptualizer</run_depend>
+ 	<run_depend>race_perception_utils</run_depend>
+	<run_depend>pcl_conversions</run_depend>
+	<run_depend>rug_kfold_cross_validation</run_depend>
+  	<run_depend>race_deep_learning_feature_extraction</run_depend>
+	<run_depend>rug_deep_feature_extraction</run_depend>
+	<run_depend>race_topic_modeling_services</run_depend>
+  	<run_depend>cv_bridge</run_depend>
+	
+</package>
+
