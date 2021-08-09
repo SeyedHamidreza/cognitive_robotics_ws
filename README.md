@@ -13,7 +13,7 @@ We break this assignment down into two parts:
 2. The second part of this assignment is dedicated totesting your approach in an open-ended fashion.In this assignment, the number of categories isnot pre-defined in advance and the knowledge ofagent/robot is increasing over time by interacting with a simulated teacher using three actions: teach, ask, and correct:
 
 <p align="center">
-  <img src="images/simulated_user.jpg" width="300" title="">
+  <img src="images/simulated_user.jpg" width="500" title="">
 </p>
 <p align="center">
   Abstract architecture for interaction between the simulated teacher and the learning agent
