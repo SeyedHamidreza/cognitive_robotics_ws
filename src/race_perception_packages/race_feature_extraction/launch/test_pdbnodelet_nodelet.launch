@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!-- This is a launch file for the bringup of the race perception architecture-->
+<launch>
+<arg name="nodelet_manager_name" default="nodelet_manager"/>
+
+<arg name="name" default="perception_db"/>
+<arg name="test_nodelet" default="test_nodelet"/>
+
+    <!-- Launches the nodelet_manager -->
+    <node pkg="nodelet" type="nodelet" name="$(arg nodelet_manager_name)"  args="manager" output="screen">
+		<!-- <param name="~num_worker_threads" value="10"/> -->
+    </node>		  
+
+    <node pkg="nodelet" type="nodelet" name="$(arg name)" args="load race_perception_db/PerceptionDBNodelet $(arg nodelet_manager_name)" output="screen">
+		<!--param loading-->
+		<!-- <param name="db_path" value="0.3"/> -->
+		<rosparam command="load" file="$(find race_perception_db)/params/default_params.yaml" />
+	</node>
+
+    <node pkg="nodelet" type="nodelet" name="$(arg test_nodelet)" args="load feature_extraction/TestNodelet $(arg nodelet_manager_name)" output="screen">
+		<rosparam command="load" file="$(find race_perception_db)/params/default_params.yaml" />
+	</node>
+
+  <!-- <arg name="rosbag_path" default="/home/hmetal/ros/" />
+  <arg name="rosbag_file" default="pointcloud" />
+  <node pkg="rosbag" type="play" name="player" output="screen" args="-l $(arg rosbag_path)$(arg rosbag_file).bag"/> -->
+  <!--  <node pkg="rosbag" type="play" name="player" output="screen" args="$(arg rosbag_path)$(arg rosbag_file).bag"/> -->
+
+</launch>

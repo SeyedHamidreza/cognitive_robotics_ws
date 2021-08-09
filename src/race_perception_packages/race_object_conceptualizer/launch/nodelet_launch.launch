@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<!-- Launches a node_example node -->
+<launch>
+<arg name="name" default="node_default"/>
+<arg name="nodelet_manager_name" default="nodelet_manager"/>
+
+	<node pkg="nodelet" type="nodelet" name="$(arg name)" output="screen" required="true" args="load hnt/HntNodelet $(arg nodelet_manager_name)">
+		<!--Must use ~ in remappings so they are private-->
+		<!--param loading-->
+		<param name="param1" value="0.3"/>
+		<rosparam command="load" file="$(find hybrid_nodelet_template)/params/default_params.yaml" />
+	</node>
+
+</launch>	

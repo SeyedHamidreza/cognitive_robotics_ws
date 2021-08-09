@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<!--Launches a race_object_conceptualizer node(let). Remaps all parameters.-->
+<launch>
+<arg name="use_nodelets" default="0"/> <!-- this flag will configure a nodes or nodelets based system-->
+<arg name="name" default="object_conceptualizer"/>
+<arg name="nodelet_manager_name" default="nodelet_manager"/>
+
+		<group if="$(arg use_nodelets)"> <!-- with nodelets -->
+			<node pkg="nodelet" type="nodelet" name="$(arg name)" args="load race_object_conceptualizer/ObjectConceptualizer_Nodelet $(arg nodelet_manager_name)" output="screen">
+			</node>
+		</group>
+
+		<group unless="$(arg use_nodelets)"> <!-- with nodes -->
+			 <node pkg="race_object_conceptualizer" type="node_object_conceptualizer" name="$(arg name)" output="screen" required="true">
+			</node>
+		</group>
+</launch>

@@ -1,0 +1,994 @@
+#ifndef _OBJECT_CONCEPTUALIZER_LIB_CPP_
+#define _OBJECT_CONCEPTUALIZER_LIB_CPP_
+
+//#define RECOGNITION_THRESHOLD 1.3
+
+
+/* _________________________________
+   |                                 |
+   |           INCLUDES              |
+   |_________________________________| */
+
+#include <sstream>
+#include <vector>
+#include <iostream>
+#include <fstream>
+//ros includes 
+#include <ros/ros.h>
+#include <ros/package.h>
+
+#include <feature_extraction/spin_image.h>
+#include <CGAL/Plane_3.h>
+#include <race_perception_utils/cycle.h>
+#include <race_perception_utils/print.h>
+
+
+//perception db includes
+#include <race_perception_msgs/perception_msgs.h>
+#include <race_perception_db/perception_db.h>
+#include <race_perception_db/perception_db_serializer.h>
+
+#define _SMALL_ICD_ 0.001
+#define _LARGE_NORMALIZED_DISTANCE_ 100000
+
+PerceptionDB* _pdb; //initialize the class
+using namespace race_perception_utils;
+using namespace race_perception_db;
+
+
+int intraCategoryDistance(vector< vector <SITOV> > category_instances, double &ICD , PrettyPrint &pp)
+
+{
+	//PrettyPrint pp;
+	size_t categorySize = category_instances.size();   
+
+	if (categorySize < 2)
+	{
+		pp.warn(std::ostringstream().flush() << "category size should be larger than one, otherwise, we can not compute the ICD, ICD= 0.001");
+		// 	  pp.printCallback();
+		ICD = _SMALL_ICD_;
+	}  
+	else 
+	{
+		for (size_t i = 0; i < categorySize; i++)
+		{
+			for (size_t j = 0; j < categorySize; j++)
+			{
+				if (i!=j)
+				{
+					float tmp_ICD =0;
+					vector <SITOV> sp1;
+					vector <SITOV> sp2;
+					sp1 = category_instances.at(i);
+					sp2 = category_instances.at(j);
+					differenceBetweenObjectViews(sp1, sp2, tmp_ICD);
+					ICD += tmp_ICD;
+				}    
+			}
+		}
+		ICD = ICD / (categorySize * (categorySize-1));
+
+		if (ICD == 0)// same objects added two times
+		{
+			ICD = _SMALL_ICD_;
+		}
+	}
+	return 1;
+}
+
+
+int objectCategoryDistance( vector <SITOV> target,
+		vector< vector <SITOV> > category_instances,
+		float &minimumDistance, int &best_matched_index , PrettyPrint &pp)
+
+{
+	//D(t,C)= minj D(t,cj), cj->C
+	//PrettyPrint pp;
+	size_t category_size=category_instances.size();  
+	best_matched_index=-1;//not matched
+
+	if (category_size < 1)
+	{
+		pp.warn(std::ostringstream().flush() <<  "Error: Size of category is zero - could not compute objectCategoryDistance D(t,C)");
+		// 		return 0;
+	}
+	else
+	{
+		// find the minimum distance between target object and category instances 
+		std::vector<float> listOfDiffrence;
+		float minimum_distance =10000000;
+		for (size_t i=0; i<category_size; i++)
+		{
+			float tmp_diff =0;
+
+			vector <SITOV> categoryInstance;
+			categoryInstance = category_instances.at(i);
+
+			differenceBetweenObjectViews(target,categoryInstance, tmp_diff);
+			//ROS_INFO("\t\t[-]-differenceBetweenObjectViews [target, categoryInstance%ld]= %f ", i, tmp_diff);
+			listOfDiffrence.push_back(tmp_diff);
+			if (tmp_diff < minimum_distance)
+			{
+				minimum_distance=tmp_diff;
+				best_matched_index=i;
+			}    
+		}
+
+		// print list of difference between target object and category instance
+
+		if (listOfDiffrence.size()>0)
+		{
+			pp.info(std::ostringstream().flush() << "List of difference between target object and given category instances :");
+		}
+		//printf ("[-]-list of difference between target object and category instance :{");
+		for (size_t i=0; i<listOfDiffrence.size();i++)
+		{
+			pp.info(std::ostringstream().flush() << "\t" << listOfDiffrence.at(i));
+		}
+
+		//ROS_INFO("\t\t[-]-objectCategoryDistance D(target,category) is: %f ", minimum_distance);
+		pp.info(std::ostringstream().flush() << "D(target,category) ="<< minimum_distance);
+
+		minimumDistance=minimum_distance;
+		// 		pp.printCallback();
+	}
+
+	return 1;
+}
+
+
+int KLobjectCategoryDistance( vector <SITOV> target,
+		vector< vector <SITOV> > category_instances,
+		float &minimumDistance, int &best_matched_index , PrettyPrint &pp)
+
+{
+	//D(t,C)= minj D(t,cj), cj->C
+	//PrettyPrint pp;
+	size_t category_size=category_instances.size();  
+	best_matched_index=-1;//not matched
+
+	if (category_size < 1)
+	{
+		pp.warn(std::ostringstream().flush() <<  "Error: Size of category is zero - could not compute objectCategoryDistance D(t,C)");
+		// 		return 0;
+	}
+	else
+	{
+		// find the minimum distance between target object and category instances 
+		std::vector<float> listOfDiffrence;
+		float minimum_distance =10000000;
+		for (size_t i=0; i<category_size; i++)
+		{
+			float tmp_diff =0;
+
+			vector <SITOV> categoryInstance;
+			categoryInstance = category_instances.at(i);
+
+			KLdifferenceBetweenObjectViews(target,categoryInstance, tmp_diff);
+			//ROS_INFO("\t\t[-]-differenceBetweenObjectViews [target, categoryInstance%ld]= %f ", i, tmp_diff);
+			listOfDiffrence.push_back(tmp_diff);
+			if (tmp_diff < minimum_distance)
+			{
+				minimum_distance=tmp_diff;
+				best_matched_index=i;
+			}    
+		}
+
+		// print list of difference between target object and category instance
+
+		if (listOfDiffrence.size()>0)
+		{
+			pp.info(std::ostringstream().flush() << "List of difference between target object and given category instances :");
+		}
+		//printf ("[-]-list of difference between target object and category instance :{");
+		for (size_t i=0; i<listOfDiffrence.size();i++)
+		{
+			pp.info(std::ostringstream().flush() << "\t" << listOfDiffrence.at(i));
+		}
+
+		//ROS_INFO("\t\t[-]-objectCategoryDistance D(target,category) is: %f ", minimum_distance);
+		pp.info(std::ostringstream().flush() << "D(target,category) ="<< minimum_distance);
+
+		minimumDistance=minimum_distance;
+		// 		pp.printCallback();
+	}
+
+	return 1;
+}
+
+
+int averageObjectCategoryDistance( vector <SITOV> target,
+		vector< vector <SITOV> > category_instances,
+		float &average_distance,  PrettyPrint &pp)
+{
+
+	float distance =0;
+	
+	if (category_instances.size() < 1)
+	{
+		pp.warn(std::ostringstream().flush() <<  "Error: Size of category is zero - could not compute objectCategoryDistancePorototypeBased D(t,C)");
+		average_distance = 1000;
+	}
+	else
+	{
+		// find the all distances between target object and category instances 
+		std::vector<float> listOfDiffrence;
+		for (size_t i=0; i<category_instances.size(); i++)
+		{
+			float tmp_distance =0;
+			vector <SITOV> categoryInstance;
+			categoryInstance = category_instances.at(i);
+
+			differenceBetweenObjectViews(target,categoryInstance, tmp_distance);
+			//ROS_INFO("\t\t[-]-differenceBetweenObjectViews [target, categoryInstance%ld]= %f ", i, tmp_distance);
+			distance += tmp_distance;
+			listOfDiffrence.push_back(tmp_distance);
+
+		}
+		average_distance =  distance / listOfDiffrence.size();
+		// print list of difference between target object and category instance
+
+		if (listOfDiffrence.size()>0)
+		{
+			pp.info(std::ostringstream().flush() << "List of difference between target object and given category instances :");
+			for (size_t i=0; i<listOfDiffrence.size();i++)
+			{
+			    pp.info(std::ostringstream().flush() << "\t" << listOfDiffrence.at(i));
+			}
+		}
+	
+		pp.info(std::ostringstream().flush() << "Average D(target,category) ="<< average_distance);
+
+	}
+
+	return 1;
+}
+
+
+int normalizedObjectCategoryDistance( float minimumDistance, float ICD , float &normalizedDistance , PrettyPrint &pp)
+{
+	//normalized distance of target object t to the category C
+	//PrettyPrint pp;
+	if ( (ICD == _SMALL_ICD_))
+	{
+		pp.error(std::ostringstream().flush() << "Error: Cannot compute NormalizedObjectCategoryDistance (ND), becuase ICD is 0");
+		normalizedDistance = _LARGE_NORMALIZED_DISTANCE_;
+		// 	pp.printCallback();
+
+	}
+	else
+	{
+
+		// 	pp.info(std::ostringstream().flush() << "minimumDistance ="<< minimumDistance);
+		// 	pp.info(std::ostringstream().flush() << "ICD ="<< ICD);
+		normalizedDistance = minimumDistance / ICD;
+		//        normalizedDistance = minimumDistance / 1;
+
+		// 	pp.info(std::ostringstream().flush() << "normalizedDistance ="<< normalizedDistance);
+		// 	pp.printCallback();
+
+	}
+	return 1;
+}
+
+
+
+void find_closest_category(vector<float> normalizedObjectCategoriesDistances,
+			  int &cat_index, float &mindist, PrettyPrint &pp, float &sigma_distance)
+{
+
+	// index = index;
+	sigma_distance=0;
+	size_t i;
+	
+	if (normalizedObjectCategoriesDistances.size() < 1)
+	{
+		//ROS_ERROR("Error: Size of NormalObjectToCategoriesDistances is 0");
+		pp.warn(std::ostringstream().flush() << "No categories known");
+		cat_index = -1;
+		return;
+	}
+	cat_index = 0;
+	mindist = normalizedObjectCategoriesDistances.at(0);
+	for (i = 1; i < normalizedObjectCategoriesDistances.size(); i++)
+	{
+		sigma_distance += normalizedObjectCategoriesDistances.at(i);
+		if (mindist > normalizedObjectCategoriesDistances.at(i))
+		{
+			mindist = normalizedObjectCategoriesDistances.at(i);
+			cat_index = i;
+		}
+	}
+	pp.info(std::ostringstream().flush() << "Sum of distances =" <<sigma_distance << "; numcats=" << normalizedObjectCategoriesDistances.size());
+	pp.info(std::ostringstream().flush() << "min distance =" << mindist);
+}
+
+void find_closest_category(vector <NOCD> normalizedObjectCategoriesDistance,
+			  int &cat_index, float &mindist, PrettyPrint &pp, float &sigma_distance)
+{
+  vector<float> tmp;
+  for (size_t i=0; i<normalizedObjectCategoriesDistance.size(); ++i)
+  {
+	tmp.push_back(normalizedObjectCategoriesDistance.at(i).normalized_distance);
+  }
+  
+  pp.info(std::ostringstream().flush() << "numcats=" << tmp.size());
+  find_closest_category(tmp, cat_index, mindist, pp, sigma_distance);
+  pp.info(std::ostringstream().flush() << "++ numcats=" << tmp.size());
+  pp.info(std::ostringstream().flush() << "++ min distance =" << mindist);
+  
+}
+
+int simpleClassificationRule( vector<float> normalizedObjectCategoriesDistances ,
+		int &categoryIndex, float &confidenceValue, 
+		float recognitionThreshold, float &minimum_distance, PrettyPrint &pp )
+{
+	//     PrettyPrint pp;
+
+	confidenceValue = 1;
+	
+   	float sigma_distance;
+	find_closest_category(normalizedObjectCategoriesDistances,
+		    categoryIndex, minimum_distance, pp, sigma_distance);
+
+	if (categoryIndex == -1)
+	    return -1;
+
+	if (minimum_distance < recognitionThreshold)
+	{
+		if (normalizedObjectCategoriesDistances.size()>1)
+		{
+			confidenceValue = 1 - (minimum_distance/(0.01*recognitionThreshold));
+				// 		 confidenceValue = 1 - (minimumDistance/(sigma_distance));
+		}
+		else 
+		{
+			confidenceValue = 1;
+		}
+	}
+	else 
+	{
+		categoryIndex = -1;// it means unknown object;
+		confidenceValue = (recognitionThreshold / minimum_distance) *0.5 ;
+	}
+
+	return 1;
+
+}
+
+int classificationRule( vector<float> normalizedObjectCategoriesDistances ,
+		int &categoryIndex, float &confidenceValue, 
+		float recognitionThreshold, float &minimum_distance, PrettyPrint &pp )
+{
+	ROS_INFO("Inside classification rule");
+	//     PrettyPrint pp;
+
+	confidenceValue = 1;
+	
+    	float sigma_distance;
+	find_closest_category(normalizedObjectCategoriesDistances,
+		    categoryIndex, minimum_distance, pp, sigma_distance);
+
+	if (categoryIndex == -1)
+	    return -1;
+
+	if (minimum_distance < recognitionThreshold)
+	{
+	    confidenceValue = 1;
+	  //             if ((sigma_distance > 0) && (normalizedObjectCategoriesDistances.size()>1))
+// 		if (normalizedObjectCategoriesDistances.size()>1)
+// 		{
+// 			confidenceValue = 1 - (minimum_distance/(5 * recognitionThreshold));
+// // 			confidenceValue = recognitionThreshold - (minimum_distance/(5 * recognitionThreshold));
+// 		}
+// 		else 
+// 		{
+// 			confidenceValue = 1;
+// 		}
+	}
+	else 
+	{
+		confidenceValue = (recognitionThreshold / minimum_distance) *0.5 ;
+		confidenceValue = 0.3 ;
+
+		if ((normalizedObjectCategoriesDistances.size()<2) || (confidenceValue < 0.4))
+		{
+			confidenceValue = 1;
+			categoryIndex=-1;// it means unknown object;
+		}
+		confidenceValue = 1;
+		categoryIndex=-1;// it means unknown object;
+		
+	}
+
+	//Added by Miguel
+    //ROS_INFO("Minimum distance is %f",minimumDistance);
+// 	confidenceValue = 1 - (minimum_distance / 0.05);
+// 	if (confidenceValue > 1)
+// 	{
+// 		confidenceValue = 1;
+// 	}
+
+	//     pp.printCallback();
+	return 1;
+
+}
+
+
+int computingConfidence(vector <NOCD> & normalizedObjectCategoriesDistance, PrettyPrint &pp)
+{
+    //the confidence (1/D^2)/(1+Sum (1/D^2))
+    
+    //Compute the denominator 
+    float denominator = 0;
+    for (size_t i = 0; i < normalizedObjectCategoriesDistance.size(); i++)
+    {
+	denominator += 1/pow(normalizedObjectCategoriesDistance.at(i).normalized_distance, 2);
+    }
+    denominator += 1;
+
+    for (size_t i = 0; i < normalizedObjectCategoriesDistance.size(); i++)
+    {
+	//computing the confidence value using luis idea (1/D^2)/(1+Sum (1/D^2))
+	
+	normalizedObjectCategoriesDistance.at(i).confidence_value = 
+			    (1/pow(normalizedObjectCategoriesDistance.at(i).normalized_distance, 2))/ denominator;
+// 	if (normalizedObjectCategoriesDistanceMsg.at(i).confidence_value > 1)
+// 	{
+// 		normalizedObjectCategoriesDistanceMsg.at(i).confidence_value = 1;
+// 	}
+// 	else if(normalizedObjectCategoriesDistanceMsg.at(i).confidence_value < 0)
+// 	{
+// 		normalizedObjectCategoriesDistanceMsg.at(i).confidence_value = 0;
+// 	}
+
+	ROS_INFO("conf is %f", normalizedObjectCategoriesDistance.at(i).confidence_value);
+    }
+
+    return 1;
+}
+
+
+int newClassificationRule(vector <NOCD> normalizedObjectCategoriesDistance,
+		int &categoryIndex, 
+		float recognitionThreshold, float &minimum_distance, PrettyPrint &pp )
+{
+	ROS_INFO("Inside new classification rule, number of object categories in database = %i", normalizedObjectCategoriesDistance.size());
+	//     PrettyPrint pp;
+	for (int i=0; i < normalizedObjectCategoriesDistance.size(); i++)
+	{
+	    pp.info(std::ostringstream().flush() << "confidence ["<<i<<"]="<<normalizedObjectCategoriesDistance.at(i).confidence_value  );
+	}
+
+   	float sigma_distance;
+	find_closest_category(normalizedObjectCategoriesDistance,
+		    categoryIndex, minimum_distance, pp, sigma_distance);
+
+	pp.info(std::ostringstream().flush() << "cat_index=" << categoryIndex);
+	pp.info(std::ostringstream().flush() << "num_cats=" << normalizedObjectCategoriesDistance.size());
+	pp.info(std::ostringstream().flush() << "min_dist=" << minimum_distance);
+
+	if (categoryIndex == -1)
+	{
+		pp.info(std::ostringstream().flush() << "case0: num categorieses =" << normalizedObjectCategoriesDistance.size());
+		return -1;
+	}
+
+	if (minimum_distance < recognitionThreshold)
+	{
+		if (normalizedObjectCategoriesDistance.size()>1)
+		{
+			pp.info(std::ostringstream().flush() << "case1: minimum_distance<recognitionThreshold ");
+			pp.info(std::ostringstream().flush() << "categoryIndex =" <<categoryIndex);
+			//pp.info(std::ostringstream().flush() << "confidence value =" <<confidenceValue);
+		}			
+	}
+	else 
+	{
+		//categoryIndex=-1;// it means unknown object;
+		if (normalizedObjectCategoriesDistance.at(categoryIndex).confidence_value > 0.4)
+		{
+			pp.info(std::ostringstream().flush() << "case2: minimum_distance is biger than the Threshold but it is near the Threshold");
+			pp.info(std::ostringstream().flush() << "categoryIndex =" <<categoryIndex);
+			//pp.info(std::ostringstream().flush() << "confidence value =" <<conf);
+			categoryIndex=-1;//to creat video for robotica 2015
+		}
+		else 
+		{
+			pp.info(std::ostringstream().flush() << "case3: minimum_distance is biger than the threshold");
+			//pp.info(std::ostringstream().flush() << "confidence value =" <<confidenceValue);
+			pp.info(std::ostringstream().flush() << "*** Predicted category is unknown");
+			categoryIndex=-1;// it means unknown object;
+		}
+	}
+
+	//     pp.printCallback();
+	return 1;
+
+}
+
+
+
+
+int putObjectViewSpinImagesinSpecificCategory(std::string cat_name, unsigned int cat_id, 
+						unsigned int track_id, unsigned int view_id, 
+						vector <SITOV> SpinImageMsg , PrettyPrint &pp
+						)
+{
+	//PrettyPrint pp;
+	SITOV msg_in;
+	RTOV _rtov;
+	_rtov.track_id = track_id;
+	_rtov.view_id = view_id;
+
+	for (size_t i = 0; i < SpinImageMsg.size(); i++)
+	{
+		msg_in = SpinImageMsg.at(i);
+		msg_in.spin_img_id = i;
+
+		uint32_t sp_size = ros::serialization::serializationLength(msg_in);
+
+		boost::shared_array<uint8_t> sp_buffer(new uint8_t[sp_size]);
+		PerceptionDBSerializer<boost::shared_array<uint8_t>, SITOV>::serialize(sp_buffer, msg_in, sp_size);
+		leveldb::Slice sp_s((char*)sp_buffer.get(), sp_size);
+		std::string sp_key = _pdb->makeSIKey(key::SI, track_id, view_id, i );
+
+		//Put slice to the db
+		_pdb->put(sp_key, sp_s); 
+
+		//create a list of key of spinimage
+		_rtov.sitov_keys.push_back(sp_key);
+
+	}
+
+	uint32_t v_size = ros::serialization::serializationLength(_rtov);
+
+	boost::shared_array<uint8_t> v_buffer(new uint8_t[v_size]);
+	PerceptionDBSerializer<boost::shared_array<uint8_t>, RTOV>::serialize(v_buffer, _rtov, v_size);	
+
+	leveldb::Slice v_s((char*)v_buffer.get(), v_size);
+
+	std::string v_key = _pdb->makeKey(key::RV, track_id, view_id);
+	ROS_INFO("\t\t[-]v_key: %s, view_id: %i, track_id: %i", v_key.c_str(), view_id, track_id);
+
+	//Put one view to the db
+	_pdb->put(v_key, v_s);
+
+	ObjectCategory _oc;
+
+	std::string oc_key = _pdb->makeOCKey(key::OC, cat_name, cat_id);
+
+	std::string str_oc;
+	_pdb->get(oc_key, &str_oc);
+	uint32_t oc_size = str_oc.length();
+	if (oc_size != 0) //Object category exist.
+	{
+		boost::shared_array<uint8_t> oc_dbuffer(new uint8_t[oc_size]);
+		memcpy(oc_dbuffer.get(), str_oc.data(), str_oc.size()); //Maybe a bug in ROS:: without this memcpy, runtime error occurs!!!!!!
+
+		//deserialize Msg 
+		race_perception_db::PerceptionDBSerializer<boost::shared_array<uint8_t>, race_perception_msgs::ObjectCategory>::deserialize(oc_dbuffer, _oc, oc_size);
+	}
+
+	_oc.cat_name = cat_name;
+	_oc.cat_id = cat_id ;
+	_oc.rtov_keys.push_back(v_key);
+
+	// when a new object view add to database, ICD should be update
+	vector <  vector <SITOV> > category_instances;
+	for (size_t i = 0; i < _oc.rtov_keys.size(); i++)
+	{
+		vector <SITOV> objectViewSpinimages = _pdb->getSITOVs(_oc.rtov_keys.at(i).c_str());
+		category_instances.push_back(objectViewSpinimages);
+	}
+
+	//float New_ICD = 0;
+	intraCategoryDistance(category_instances, _oc.icd, pp);
+	//_oc.icd = New_ICD;
+
+	oc_size = ros::serialization::serializationLength(_oc);
+
+	pp.info(std::ostringstream().flush() << _oc.cat_name.c_str() << " category has " << _oc.rtov_keys.size() << "objects.");
+	pp.info(std::ostringstream().flush() << "ICD for " << _oc.cat_name.c_str() << " category updated. New ICD is: "<< _oc.icd);
+
+	boost::shared_array<uint8_t> oc_buffer(new uint8_t[oc_size]);
+	PerceptionDBSerializer<boost::shared_array<uint8_t>, ObjectCategory>::serialize(oc_buffer, _oc, oc_size);	
+	leveldb::Slice ocs((char*)oc_buffer.get(), oc_size);
+	_pdb->put(oc_key, ocs);
+
+	//pp.printCallback();
+
+	return (1);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+int diffrenceBetweenTwoObjectViewHistogram(SITOV objectViewHistogram1,
+		SITOV objectViewHistogram2, 
+		float &diffrence)
+{
+	if (objectViewHistogram1.spin_image.size() ==  objectViewHistogram2.spin_image.size())
+	{
+		diffrence =0;
+		for (size_t i = 0; i < objectViewHistogram1.spin_image.size(); i++)
+		{
+			diffrence += pow( (objectViewHistogram1.spin_image.at(i) - objectViewHistogram2.spin_image.at(i)) , 2);
+			// 	    diffrence += log (pow( (objectViewHistogram1.spin_image.at(i) - objectViewHistogram2.spin_image.at(i)) , 2));
+		}
+		// 	diffrence = log (diffrence);
+		return(1);
+	}
+	else 
+	{
+		ROS_INFO("\t\t[-]- object1 size = %ld", objectViewHistogram1.spin_image.size());
+		ROS_INFO("\t\t[-]- object2 size = %ld", objectViewHistogram2.spin_image.size());
+		ROS_ERROR("Can not compare two object view histograms with diffrent lenght");
+		return(0);
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+int histogramBasedObjectCategoryDistance( SITOV target,
+		vector< SITOV > category_instances,
+		float &minimumDistance, 
+		int &best_matched_index, 
+		PrettyPrint &pp)
+
+{
+	size_t category_size = category_instances.size();  
+	best_matched_index=-1;//not matched
+
+	if (category_size < 1)
+	{
+		pp.warn(std::ostringstream().flush() <<  "Error: Size of category is zero - could not compute objectCategoryDistance D(t,C)");
+		// return 0;
+	}
+	else
+	{
+		// find the minimum distance between target object and category instances 
+		std::vector<float> listOfDiffrence;
+		float minimum_distance =10000000;
+		for (size_t i=0; i<category_size; i++)
+		{
+			float tmp_diff =0;
+			SITOV categoryInstance;
+			categoryInstance = category_instances.at(i);
+
+			diffrenceBetweenTwoObjectViewHistogram(target,categoryInstance, tmp_diff);
+			//          differenceBetweenObjectViews(target,categoryInstance, tmp_diff);
+			//pp.info(std::ostringstream().flush() <<"diffrenceBetweenTwoObjectViewHistogram [target, Instance "<< i<<"]= "<< tmp_diff);
+			listOfDiffrence.push_back(tmp_diff);
+			if (tmp_diff < minimum_distance)
+			{
+				minimum_distance=tmp_diff;
+				best_matched_index=i;
+			}    
+		}
+
+		// print list of difference between target object and category instance
+
+		//         if (listOfDiffrence.size()>0)
+		//         {
+		// //             pp.info(std::ostringstream().flush() << "List of difference between target object and given category instances :");
+		//         }
+		//         //printf ("[-]-list of difference between target object and category instance :{");
+		//         for (size_t i=0; i<listOfDiffrence.size();i++)
+		//         {
+		// //             pp.info(std::ostringstream().flush() << "\t" << listOfDiffrence.at(i));
+		//         }
+
+		//ROS_INFO("\t\t[-]-objectCategoryDistance D(target,category) is: %f ", minimum_distance);
+		pp.info(std::ostringstream().flush() << "D(target,category) ="<< minimum_distance);
+
+		minimumDistance=minimum_distance;
+		// 		pp.printCallback();
+	}
+
+	return 1;
+}
+
+int kullbackLiebler ( vector <double>  theta,
+		      vector <double>  new_theta,
+		      double &likelihood)   
+{ 
+    double similarity = 0;
+    double Distance_P_Q =0;
+    double Distance_Q_P =0;
+    for (int i =0; i< theta.size(); i++)
+    {
+	if ((theta.at(i) != 0) and (new_theta.at(i) != 0))
+	{
+	    Distance_P_Q += new_theta.at(i)* (log2(new_theta.at(i)/theta.at(i)));
+	    Distance_Q_P += theta.at(i)* (log2(theta.at(i)/new_theta.at(i)));
+	}
+    }	
+    
+    similarity = 0.5 * (Distance_P_Q + Distance_Q_P);
+    //ROS_INFO("P(O|query) = %f", similarity);
+    likelihood = similarity;
+    
+  return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+int KLdiffrenceBetweenTwoObjectViewHistogram(SITOV objectViewHistogram1,
+					      SITOV objectViewHistogram2, 
+					      double &diffrence)
+{
+	if (objectViewHistogram1.spin_image.size() ==  objectViewHistogram2.spin_image.size())
+	{
+		diffrence =10000000;
+		double Distance_P_Q =0;
+//		double Distance_Q_P =0;
+		for (size_t i = 0; i < objectViewHistogram1.spin_image.size(); i++)
+		{
+			
+		  
+		   Distance_P_Q += pow((objectViewHistogram1.spin_image.at(i) - objectViewHistogram2.spin_image.at(i)),2) /
+					      (objectViewHistogram1.spin_image.at(i) + objectViewHistogram2.spin_image.at(i));
+				
+		  
+// 		      if ((objectViewHistogram1.spin_image.at(i) != 0) and  (objectViewHistogram2.spin_image.at(i) != 0))
+// 		      {
+			   
+			 	      
+			    
+//			  Distance_Q_P += objectViewHistogram2.spin_image.at(i) * (log2(objectViewHistogram2.spin_image.at(i)/objectViewHistogram1.spin_image.at(i)));
+
+// 			  Distance_Q_P += objectViewHistogram2.spin_image.at(i) * (log2(objectViewHistogram2.spin_image.at(i)/objectViewHistogram1.spin_image.at(i)));
+// 			  Distance_P_Q += objectViewHistogram1.spin_image.at(i)* (log2(objectViewHistogram1.spin_image.at(i)/objectViewHistogram2.spin_image.at(i)));
+						      
+			      //ROS_INFO("\t\t[-]- [sp1.[%ld], sp2.[%ld]) = (%f, %f)",i,i, objectViewHistogram1.spin_image.at(i),objectViewHistogram2.spin_image.at(i));
+			      //ROS_INFO("\t\t[-]- Distance_P_Q = %f", Distance_P_Q);
+			      //ROS_INFO("\t\t[-]- Distance_Q_P = %f", Distance_Q_P);
+			      
+
+// 			}
+			
+// 			if (objectViewHistogram2.spin_image.at(i) != 0)
+// 			{
+// 			    Distance_P_Q += objectViewHistogram1.spin_image.at(i)* (log2(objectViewHistogram1.spin_image.at(i)/objectViewHistogram2.spin_image.at(i)));
+// 						      
+// 			      ROS_INFO("\t\t[-]- [sp1.[%ld], sp2.[%ld]) = (%f, %f)",i,i, objectViewHistogram1.spin_image.at(i),objectViewHistogram2.spin_image.at(i));
+// 			      ROS_INFO("\t\t[-]- Distance_P_Q = %f", Distance_P_Q);
+// 			      
+// 			  
+// 			}
+
+
+// 			if (objectViewHistogram1.spin_image.at(i)+objectViewHistogram2.spin_image.at(i) != 0)
+// 			{
+// 			   Distance_Q_P += objectViewHistogram2.spin_image.at(i)* (log2(2*objectViewHistogram2.spin_image.at(i)/(objectViewHistogram1.spin_image.at(i)+objectViewHistogram2.spin_image.at(i))));
+// 			   Distance_P_Q += objectViewHistogram1.spin_image.at(i)* (log2(2*objectViewHistogram1.spin_image.at(i)/(objectViewHistogram1.spin_image.at(i)+objectViewHistogram2.spin_image.at(i))));
+// 			}
+		}
+
+
+		diffrence = 0.5 * Distance_P_Q;
+		//ROS_INFO("\t\t[-]- Distance_P_Q = %f", Distance_P_Q);
+		//ROS_INFO("\t\t[-]- Distance_Q_P = %f", Distance_Q_P);
+
+// 		diffrence = 0.5 * (Distance_P_Q + Distance_Q_P);
+
+		//ROS_INFO("\t\t[-]- difference = %f", diffrence);
+		return(1);
+	}
+	else 
+	{
+		//ROS_INFO("\t\t[-]- object1 size = %ld", objectViewHistogram1.spin_image.size());
+		//ROS_INFO("\t\t[-]- object2 size = %ld", objectViewHistogram2.spin_image.size());
+		//ROS_ERROR("Can not compare two object view histograms with diffrent lenght");
+		return(0);
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+int histogramBasedObjectCategoryKLDistance( SITOV target,
+		vector< SITOV > category_instances,
+		float &minimumDistance, 
+		int &best_matched_index, 
+		PrettyPrint &pp)
+
+{
+	size_t category_size = category_instances.size();  
+	best_matched_index=-1;//not matched
+
+	if (category_size < 1)
+	{
+		pp.warn(std::ostringstream().flush() <<  "Error: Size of category is zero - could not compute objectCategoryDistance D(t,C)");
+		// return 0;
+	}
+	else
+	{
+		// find the minimum distance between target object and category instances 
+		std::vector<float> listOfDiffrence;
+		float minimum_distance =10000000;
+		for (size_t i=0; i<category_size; i++)
+		{
+			double tmp_diff = 0;
+			SITOV categoryInstance;
+			categoryInstance = category_instances.at(i);
+
+			KLdiffrenceBetweenTwoObjectViewHistogram(target,categoryInstance, tmp_diff);
+			//          differenceBetweenObjectViews(target,categoryInstance, tmp_diff);
+			//pp.info(std::ostringstream().flush() <<"KLdiffrenceBetweenTwoObjectViewHistogram [target, Instance "
+			//		<< i<<"]= "<< tmp_diff);
+			listOfDiffrence.push_back(tmp_diff);
+			if (tmp_diff < minimum_distance)
+			{
+				minimum_distance=tmp_diff;
+				best_matched_index=i;
+			}    
+		}
+
+		// print list of difference between target object and category instance
+
+		//         if (listOfDiffrence.size()>0)
+		//         {
+		// //             pp.info(std::ostringstream().flush() << "List of difference between target object and given category instances :");
+		//         }
+		//         //printf ("[-]-list of difference between target object and category instance :{");
+		//         for (size_t i=0; i<listOfDiffrence.size();i++)
+		//         {
+		// //             pp.info(std::ostringstream().flush() << "\t" << listOfDiffrence.at(i));
+		//         }
+
+		//ROS_INFO("\t\t[-]-objectCategoryDistance D(target,category) is: %f ", minimum_distance);
+		pp.info(std::ostringstream().flush() << "D(target,category) ="<< minimum_distance);
+
+		minimumDistance=minimum_distance;
+		// 		pp.printCallback();
+	}
+
+	return 1;
+}
+
+
+
+int updateNaiveBayesModel1(std::string cat_name,
+		unsigned int cat_id,
+		PrettyPrint &pp,
+		PerceptionDB* _pdb1
+		)
+{    
+
+	//initialize the leveldb database
+	//     _pdb = race_perception_db::PerceptionDB::getPerceptionDB(&nh);
+
+	/* _____________________________________
+	   |                                     |
+	   |   get list of all object categories |
+	   |_____________________________________| */
+	ROS_INFO("Test0 -> category name = %s", cat_name.c_str());
+
+
+	vector <ObjectCategory> ListOfObjectCategory = _pdb1->getAllObjectCat();
+	ROS_INFO("number of object categories in database = %i", ListOfObjectCategory.size());
+
+	pp.info(std::ostringstream().flush() << ListOfObjectCategory.size()<<" categories exist in the perception database" );
+	ROS_INFO("Test11");
+
+	/* _____________________________________________
+	   |                        	                  |
+	   |   compute total number of training object  |
+	   |___________________________________________| */
+
+	int totoal_number_of_training_data =0;
+	for (int i = 0; i < ListOfObjectCategory.size(); i++) // categories exist in the database 
+	{
+		totoal_number_of_training_data += ListOfObjectCategory.at(i).rtov_keys.size();
+	}
+	ROS_INFO("Total number of training data = %d", totoal_number_of_training_data);
+	ROS_INFO("Test2");
+	/* _____________________________________________________
+	   |                                                    |
+	   |    create a naive Bayes model for each category   |
+	   |__________________________________________________| */
+
+	string package_path  = ros::package::getPath("race_naive_bayes_object_recognition");
+	for (size_t i = 0; i < ListOfObjectCategory.size(); i++) // all category exist in the database 
+	{
+
+		if (ListOfObjectCategory.at(i).rtov_keys.size() > 1) 
+		{    
+			vector <float> overal_category_representation;
+			float total_number_of_words_in_category=0;
+			vector <float> likelihoods_of_all_words;
+			vector< SITOV > tmp_obj= _pdb1->getSITOVs(ListOfObjectCategory.at(0).rtov_keys.at(0).c_str());
+			int size_of_dictionary = tmp_obj.at(0).spin_image.size();
+			for (int k =0; k < size_of_dictionary; k++)
+			{
+				overal_category_representation.push_back(0);
+				likelihoods_of_all_words.push_back(0);
+			}  
+
+			pp.info(std::ostringstream().flush() << ListOfObjectCategory.at(i).cat_name.c_str() <<" category has " 
+					<< ListOfObjectCategory.at(i).rtov_keys.size()<< " views");
+
+			ROS_INFO("Test3");
+			/* _____________________________________________________________________________
+			   |                                     					   |
+			   |   overal_category_representation : total_number_of_each_words_in_category   |
+			   |____________________________________________________________________________| */
+
+			std::vector< SITOV > category_instances; 
+
+			if (strcmp (cat_name.c_str(),ListOfObjectCategory.at(i).cat_name.c_str())==0)
+			{
+				for (size_t j = 0; j < ListOfObjectCategory.at(i).rtov_keys.size(); j++)
+				{
+					vector< SITOV > objectViewHistogram = _pdb1->getSITOVs(ListOfObjectCategory.at(i).rtov_keys.at(j).c_str());
+					category_instances.push_back(objectViewHistogram.at(0));
+
+					for (int k =0; k < objectViewHistogram.at(0).spin_image.size(); k++)
+					{
+						overal_category_representation.at(k) += objectViewHistogram.at(0).spin_image.at(k);
+						total_number_of_words_in_category += objectViewHistogram.at(0).spin_image.at(k);
+					}
+
+				}
+
+				ROS_INFO("Test4");
+				// 		pp.info(std::ostringstream().flush() << "size of object view histogram = " << objectViewHistogram.at(0).spin_image.size());
+				// 		pp.info(std::ostringstream().flush() << "size of overal_category_representation = " << overal_category_representation.size());
+				/* _____________________________________
+				   |                                      |
+				   |   compute likelihoods_of_all_words  |
+				   |____________________________________| */
+
+				for (int idx = 0; idx <  size_of_dictionary; idx++)
+				{
+					likelihoods_of_all_words.at(idx) = float(1+overal_category_representation.at(idx)) /
+						float(size_of_dictionary+total_number_of_words_in_category);							    
+
+				}
+
+				ROS_INFO("Test5");
+				/* _____________________________________________
+				   |                                              |
+				   |   write the likelihoods model to the files  |
+				   |____________________________________________| */
+
+				cout << "category name = "<<ListOfObjectCategory.at(i).cat_name ;
+
+				string systemStringCommand= "mkdir "+ package_path+ "/NaiveBayesModels/"+ ListOfObjectCategory.at(i).cat_name ;
+				system( systemStringCommand.c_str());
+
+
+				string likelihoods_path = package_path + "/NaiveBayesModels/" + ListOfObjectCategory.at(i).cat_name + "/likelihoods.txt";
+				ROS_INFO("\t\t[-]- likelihoods_path = %s", likelihoods_path.c_str());
+
+				std::ofstream likelihoods (likelihoods_path.c_str(), std::ofstream::trunc);
+
+				for (int i=0; i < likelihoods_of_all_words.size(); i++)
+				{
+					likelihoods << likelihoods_of_all_words.at(i)<<"\n";
+				}
+				likelihoods.close();
+			}
+			ROS_INFO("Test6");
+			/* _____________________________________________
+			   |                                              |
+			   |  	   write the priors model to the files    |
+			   |____________________________________________| */
+
+			string prior_probability_path = package_path + "/NaiveBayesModels/" + ListOfObjectCategory.at(i).cat_name + "/prior_probability.txt";		
+			ROS_INFO("\t\t[-]- prior_probability_path = %s", prior_probability_path.c_str());
+			std::ofstream prior_probability (prior_probability_path.c_str(), std::ofstream::trunc);  
+			float prior_probability_value = float (ListOfObjectCategory.at(i).rtov_keys.size())/float (totoal_number_of_training_data);
+			prior_probability << prior_probability_value ;
+			prior_probability.close();	
+			ROS_INFO("Prior probability = %f", prior_probability_value);	    
+
+			ROS_INFO("Test7");
+		}
+	}
+
+	return (1);
+}
+
+
+
+#endif
+
+
