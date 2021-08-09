@@ -1,0 +1,4 @@
+# Finish the recording of experiences.
+---
+bool success # true if successful, false if wasn't recording.
+

@@ -1,0 +1,7 @@
+string domainname
+string problemname
+string packageline
+TaskAtom[] tasks
+---
+string path
+

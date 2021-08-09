@@ -1,0 +1,8 @@
+# Asks whether the parts of this aggregate is either temporally or spatialy 
+
+string aggregate_name
+FluentArray aggregate_parts
+
+---
+
+bool is_consistent

@@ -1,0 +1,7 @@
+time time_start
+time time_end
+# no class restriction: class = ''
+string target_class
+---
+string[] fluent_names
+BlackboardResponse result

@@ -1,0 +1,10 @@
+#given the current state, providing the next command(s) should be dispatched 
+#the action refinement is also provided by this service
+
+
+string[] current_states
+time time
+ObjectHypothesis[] observations
+---
+string[] action_command 
+ObjectHypothesis[] placingBB

@@ -1,0 +1,6 @@
+# the name of the instance, i.e. 'on2'
+string instance
+---
+# the fluent (if one of the given name existed)
+Fluent fluent
+BlackboardResponse result

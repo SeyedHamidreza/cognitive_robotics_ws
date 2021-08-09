@@ -1,0 +1,5 @@
+# Enables or disables the executors replanning capabilities.
+# true enables and false disables replanning.
+bool replanning
+---
+

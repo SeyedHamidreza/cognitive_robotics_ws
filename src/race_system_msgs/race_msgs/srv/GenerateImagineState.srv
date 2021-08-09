@@ -1,0 +1,6 @@
+# Services provided by the translator to generate the input state for Imagination
+race_msgs/Atom[] updated_fluents
+---
+race_msgs/WorldState world_state
+race_msgs/RobotState robot_state
+

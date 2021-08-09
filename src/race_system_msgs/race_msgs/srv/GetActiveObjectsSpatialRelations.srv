@@ -1,0 +1,6 @@
+# the frame_id (e.g., 'eating_area_east_table1') of an area
+string frame_id
+
+---
+# all objects and spatial relations in the requested area
+SpatialRelationSet active_relations

@@ -1,0 +1,4 @@
+# this service returns the set of anchored objects
+---
+uint8[] anchor_ids
+race_msgs/BoundingBox[] bounding_boxes

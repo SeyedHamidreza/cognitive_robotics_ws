@@ -1,0 +1,5 @@
+# The name of the episode you want to use.
+# If no episode with that name exists, a new one with this name will be created.
+string episode
+---
+BlackboardResponse result

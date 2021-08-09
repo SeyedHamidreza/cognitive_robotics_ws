@@ -1,0 +1,18 @@
+# Asks whether this scene is a given named scene layout.
+
+# SceneLayout label
+string label
+
+---
+
+bool is_scenelayout
+
+# missing object entity list
+SpatialEntity[] missing_entities
+
+# incorrect spatial realtion set
+SpatialEntity[] deviated_entities
+
+# extra object entity list
+SpatialEntity[] extra_entities
+

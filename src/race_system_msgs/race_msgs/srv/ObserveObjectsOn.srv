@@ -1,0 +1,5 @@
+# name of table or area
+string name
+---
+# the objects that are on that area.
+string[] objects

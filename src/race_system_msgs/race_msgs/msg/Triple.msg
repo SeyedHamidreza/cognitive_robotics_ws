@@ -1,0 +1,6 @@
+string subject_namespace
+string subject
+string predicate_namespace
+string predicate
+string object_namespace
+string object

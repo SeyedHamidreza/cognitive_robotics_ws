@@ -1,0 +1,4 @@
+string owl_class
+---
+string[] subclasses
+BlackboardResponse result

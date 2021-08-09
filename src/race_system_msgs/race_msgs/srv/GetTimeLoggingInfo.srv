@@ -1,0 +1,4 @@
+---
+# the timelogging information of the blackboard
+string timelogging_information
+BlackboardResponse result

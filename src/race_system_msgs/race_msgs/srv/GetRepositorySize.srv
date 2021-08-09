@@ -1,0 +1,5 @@
+---
+# DO NOT USE! DEPRECATED!
+# the size of the repository in triples
+int32 size
+BlackboardResponse result

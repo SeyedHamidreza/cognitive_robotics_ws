@@ -1,0 +1,10 @@
+# tf frame with respect to which the spatial relations are to be computed (reference frame)
+string frame_id
+
+# which spatial calculi to use? (at least one has to be given)
+SpatialCalculus[] calculi
+
+# spatial entites for which to compute spatial relations. names must be unique for this request.
+SpatialEntity[] entities
+---
+SpatialRelation[] relations

@@ -1,0 +1,8 @@
+# Asks whether the human is working (SAM example).
+
+# the time point to query (time=0 means "latest")
+time time
+
+---
+
+bool human_working

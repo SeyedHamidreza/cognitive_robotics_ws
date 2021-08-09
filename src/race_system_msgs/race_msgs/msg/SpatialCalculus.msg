@@ -1,0 +1,9 @@
+string calculus_id
+
+string PROJECTIVE=ProjectiveSpatialRelation
+string PROJECTIVE3D=Projective3DSpatialRelation
+string RCC8=Rcc8SpatialRelation
+string CARDINAL_DIRECTIONS=CardinalDirectionSpatialRelation
+string RA=RectangleAlgebraSpatialRelation
+string C9=Core9SpatialRelation
+string DR=DistanceSpatialRelation

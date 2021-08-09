@@ -1,0 +1,13 @@
+# Asks for the individuals that belong to the class identified by "id";
+# If no class with matching 
+# id could be found, an empty list is returned.
+
+# the time point to query (time=0 means "latest")
+time time
+
+# the classes unique identifier string
+string id
+
+---
+
+string[] ont_individuals

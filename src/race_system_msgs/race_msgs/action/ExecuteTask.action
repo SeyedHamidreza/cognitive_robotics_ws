@@ -1,0 +1,8 @@
+# goal:
+TaskAtom task
+---
+# result: a list of plans
+string result
+---
+# feedback:
+string feedback

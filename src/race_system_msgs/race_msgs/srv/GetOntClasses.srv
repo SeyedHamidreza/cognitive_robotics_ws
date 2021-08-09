@@ -1,0 +1,13 @@
+# Asks for the ontology classes that the individual identified by "id" belongs to;
+# returns all super classes, not just the direct ones. If no individual with matching 
+# id could be found, an empty list is returned.
+
+# the time point to query (time=0 means "latest")
+time time
+
+# the object's unique identifier string
+string id
+
+---
+
+string[] ont_classes

@@ -1,0 +1,6 @@
+# Starts the recording of experiences.
+# name of the experience
+string name
+---
+bool success # true if successful, false if already recording.
+
