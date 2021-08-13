@@ -1437,6 +1437,13 @@ int RGBDBasedYOZ2DObjectHistogram(  boost::shared_ptr<pcl::PointCloud<T> >  obje
 
 	cv::imwrite("/tmp/YOZ_RGB.jpg",img_RGB);
 	
+	for (int i =0; i < number_of_bins; i++)
+	{
+		for (int j =0; j < number_of_bins; j++)
+		{		
+			YOZ_D.at(i).at(j) = float(GOOD_histogram.at(i).at(j));			
+		}
+	}
     return 0;
 }
 
@@ -1616,6 +1623,15 @@ int RGBDBasedXOZ2DObjectHistogram( boost::shared_ptr<pcl::PointCloud<T> >  objec
 	// cv::waitKey(0);
 	cv::imwrite("/tmp/XOZ_RGB.jpg",img_RGB);
 	
+	for (int i =0; i < number_of_bins; i++)
+	{
+		for (int j =0; j < number_of_bins; j++)
+		{		
+			XOZ_D.at(i).at(j) = float(GOOD_histogram.at(i).at(j));			
+		}
+	}
+
+
     return 0;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1797,6 +1813,14 @@ int RGBDBasedXOY2DObjectHistogram( boost::shared_ptr<pcl::PointCloud<T> >  objec
 	// cv::waitKey(0);
 	cv::imwrite("/tmp/XOY_RGB.jpg",img_RGB);
 	
+	for (int i =0; i < number_of_bins; i++)
+	{
+		for (int j =0; j < number_of_bins; j++)
+		{		
+			XOY_D.at(i).at(j) = float(GOOD_histogram.at(i).at(j));			
+		}
+	}
+
     return 0;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -3901,20 +3925,19 @@ int computeDepthBasedGoodDescriptorForAnAxisAlignedObject(boost::shared_ptr<pcl:
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
-int computeDepthBasedGoodDescriptorAndSaveDepthAndRGBProjections( 
-													boost::shared_ptr<pcl::PointCloud<T> > target_pc,
-													int adaptive_support_lenght,
-													double global_image_width,
-													int threshold,
-													int number_of_bins,
-													boost::shared_ptr<pcl::PointCloud<T> > &pca_object_view,
-													Eigen::Vector3f &center_of_bbox,
-													vector < boost::shared_ptr<pcl::PointCloud<T> > > &vector_of_projected_views, 
-													double &largest_side, 
-													int &sign,
-													vector <float> &view_point_entropy,
-													string &std_name_of_sorted_projected_plane,
-													vector< float > &object_description )	
+int computeDepthBasedGoodDescriptorAndSaveDepthAndRGBProjections(   boost::shared_ptr<pcl::PointCloud<T> > target_pc,
+																	int adaptive_support_lenght,
+																	double global_image_width,
+																	int threshold,
+																	int number_of_bins,
+																	boost::shared_ptr<pcl::PointCloud<T> > &pca_object_view,
+																	Eigen::Vector3f &center_of_bbox,
+																	vector < boost::shared_ptr<pcl::PointCloud<T> > > &vector_of_projected_views, 
+																	double &largest_side, 
+																	int &sign,
+																	vector <float> &view_point_entropy,
+																	string &std_name_of_sorted_projected_plane,
+																	vector< float > &object_description )	
 {      
 	bool print_flag = false;
 
@@ -4096,7 +4119,9 @@ int computeDepthBasedGoodDescriptorAndSaveDepthAndRGBProjections(
 	
 	vector <float> histogramYOZ1D;
 	convert2DhistogramTo1Dhistogram(YOZ_histogram, histogramYOZ1D);
+	
 	//printHistogram ( histogramYOZ1D, "YOZ");
+	
 	complete_object_histogram.insert(complete_object_histogram.end(), histogramYOZ1D.begin(), histogramYOZ1D.end());
 	vector <float> normalized_histogramYoZ;
 	normalizingHistogram( histogramYOZ1D, normalized_histogramYoZ);
@@ -4127,11 +4152,11 @@ int computeDepthBasedGoodDescriptorAndSaveDepthAndRGBProjections(
 	vector <float> normalized_histogramXoZ;
 	normalizingHistogram( histogramXOZ1D, normalized_histogramXoZ);
 	//printHistogram ( normalized_histogramXoZ, "normalized XOZ");
-	normalized_projected_views.push_back(normalized_histogramXoZ);
 
-	complete_object_histogram_normalized.insert(complete_object_histogram_normalized.end(), 
-						  normalized_histogramXoZ.begin(), 
-						  normalized_histogramXoZ.end());
+	normalized_projected_views.push_back(normalized_histogramXoZ);
+	complete_object_histogram_normalized.insert(complete_object_histogram_normalized.end(), normalized_histogramXoZ.begin(), normalized_histogramXoZ.end());
+	//printHistogram ( complete_object_histogram_normalized, "complete_object_histogram_normalized XOZ");
+
 	float XoZ_entropy = 0;
 	//viewpointEntropy(normalized_histogramXoZ, XoZ_entropy);
 	viewpointEntropyNotNormalized(histogramXOZ1D, XoZ_entropy);
@@ -4165,7 +4190,7 @@ int computeDepthBasedGoodDescriptorAndSaveDepthAndRGBProjections(
 	if  (print_flag)  ROS_INFO("viewpointEntropyXoY = %f", XoY_entropy);
 	view_point_entropy.push_back(XoY_entropy);
 
-	//printHistogram ( complete_object_histogram_normalized, "complete_object_histogram_normalized");
+	// printHistogram ( complete_object_histogram_normalized, "complete_object_histogram_normalized");
 	
 	vector <float> normalized_histogram;
 	normalizingHistogram( complete_object_histogram, normalized_histogram);
