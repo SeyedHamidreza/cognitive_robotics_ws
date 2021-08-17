@@ -90,6 +90,9 @@ cd ~/
 
 source .bashrc
 
+sudo apt install python3-pip
+pip3 install numpy matplotlib pandas seaborn
+
 echo "-------- Installation completed --------"
 
 
