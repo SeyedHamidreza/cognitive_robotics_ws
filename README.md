@@ -59,7 +59,8 @@ alias python='/usr/bin/python2.7'
 ```
 
 
-then, you need to install all the necessary packages and softwares, including, ROS melodic, TF, Keras, and Leveldb. 
+then, you need to install all the necessary packages and software, including, ROS melodic, TF, Keras, and leveldb. 
+Towards this goal you need to copy the "setup_all_required_packages.sh" file in your home/ and run the following lines: 
 
 ```bash
 cd ~
