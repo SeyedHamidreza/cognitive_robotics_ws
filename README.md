@@ -41,7 +41,7 @@ gedit .bashrc
 
 The following lines should have been added at the end of your bashrc
 
-```
+```bash
 #Add ROS cognitive_robotics_ws as workspace
 source /opt/ros/melodic/setup.bash
 export LD_LIBRARY_PATH=/opt/ros/melodic/lib:${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
