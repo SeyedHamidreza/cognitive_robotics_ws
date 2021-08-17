@@ -30,7 +30,7 @@ You can simply use the provided bash script to install all necessary packages on
 ## Clone ROS packages
 
 
-Clone the repository and compile it:
+Clone the repository in your home:
 
 ```sh
 cd ~
@@ -38,7 +38,8 @@ git clone https://github.com/SeyedHamidreza/cognitive_robotics_ws.git
 mv cognitive_robotics_ws/*.sh ~/
 ```
 
-There should be two bash files, namly setup_all_required_packages.sh and setup_bashrc.sh, in your home folder. 
+
+After runnging the above commands, a folder named "cognitive_robotics_ws" and two bash files, i.e. "setup_all_required_packages.sh" and "setup_bashrc.sh", should be exist in your home folder. 
 Then, run the following lines:
 
 ```bash
