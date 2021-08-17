@@ -26,13 +26,31 @@ For detailed instructions, please read the [assignment description](https://gith
 
 You can simply use the provided bash script to install all necessary packages on your machine. Let's see how to do that:
 
+
+## Clone ROS packages
+
+
+Clone the repository and compile it:
+
+```sh
+mkdir -p ~/cognitive_robotics_ws/src
+cd ~/cognitive_robotics_ws/
+git clone https://github.com/SeyedHamidreza/cognitive_robotics_ws.git
+rm -r src 
+mv cognitive_robotics_ws src
+mv src/*.sh ~/
+```
+
+There should be two bash files, namly setup_all_required_packages.sh and setup_bashrc.sh, in your home folder. 
+Then, run the following lines:
+
 ```bash
 cd ~
 sudo chmod +x setup_bashrc.sh
 ./setup_bashrc.sh
 ```
 
-then, check your bashrc file: 
+Check your bashrc file using: 
 
 ```bash
 gedit .bashrc
@@ -58,9 +76,7 @@ alias python='/usr/bin/python2.7'
 
 ```
 
-
-then, you need to install all the necessary packages and software, including, ROS melodic, TF, Keras, and leveldb. 
-Towards this goal you need to copy the "setup_all_required_packages.sh" file in your home/ and run the following lines: 
+Afterwards, you need to install all the necessary packages and software, including, ROS melodic, TF, Keras, and leveldb using "setup_all_required_packages.sh" script by running the following lines: 
 
 ```bash
 cd ~
@@ -68,41 +84,32 @@ sudo chmod +x setup_all_required_packages.sh
 ./setup_all_required_packages.sh
 ```
 
-Check the version of ROS, TF:
+To ensure that the installation process was successful, we can check the version of ROS, TF:
 
 ```bash
 source .bashrc
 
-# use the following line to check ROS version
+# use the following line to check ROS version -> the output should be "melodic"
 rosversion -d
 
-# use the following line to check Keras and TF
+# use the following line to check Keras and TF -> the output should be "Using TensorFlow backend.  2.3.1"
 python -c 'import keras; print(keras.__version__)'
 
 ```
 
-## Clone ROS packages
+## Compile ROS packages
 
 
-Create a catkin workspace, refer to: http://wiki.ros.org/catkin/Tutorials/create_a_workspace.
 
 ```sh
-mkdir -p ~/cognitive_robotics_ws/src
 cd ~/cognitive_robotics_ws/
 catkin_make
 ```
 
-Clone the repository and compile it:
+* Notes: 
 
-```sh
-cd ~/cognitive_robotics_ws/
-git clone https://github.com/SeyedHamidreza/cognitive_robotics_ws.git
-rm -r src 
-mv cognitive_robotics_ws src
-catkin_make
-```
-
-* NOTE: If you faced with "c++ internal compiler error", use "catkin_make -j 2" instead of "catkin_make". Check the Troubleshooting section for more info.
+** Refer to http://wiki.ros.org/catkin/Tutorials/create_a_workspace if you are not familiar with creating a catkin workspace. 
+** If you faced with "c++ internal compiler error", use "catkin_make -j 2" instead of "catkin_make". Check the Troubleshooting section for more info.
 
 
 ## Troubleshooting
