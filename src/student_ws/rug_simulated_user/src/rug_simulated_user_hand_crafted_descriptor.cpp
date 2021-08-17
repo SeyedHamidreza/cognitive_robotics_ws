@@ -414,6 +414,8 @@ int main(int argc, char** argv)
 	category_introduced << "1\n";
 	
 	vector <ObjectCategory> list_of_object_category = _pdb->getAllObjectCat();
+	while (list_of_object_category.size() == 0)
+		list_of_object_category = _pdb->getAllObjectCat();
 
 	/* ______________________________
 	|                                |
@@ -655,6 +657,9 @@ int main(int argc, char** argv)
 			
 				//// get list of all object categories
 				list_of_object_category = _pdb->getAllObjectCat();
+				while (list_of_object_category.size() == 0)
+					list_of_object_category = _pdb->getAllObjectCat();
+
 				ROS_INFO("\t\t[-] %d categories exist in the perception database ", list_of_object_category.size() );
 				
 				ros::Time start_time_recognition = ros::Time::now();

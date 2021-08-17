@@ -140,7 +140,7 @@ int Hist_lenght = 0;
 
 ////TODO: home_directory_address should be pass as input argument
 //std::string home_directory_address= "/home/cognitiverobotics/datasets/washington_short_version/";
-std::string home_directory_address= "~/datasets/washington_short_version/";
+std::string home_directory_address= "/home/cognitiverobotics/datasets/washington_short_version/";
 
 using namespace pcl;
 using namespace std;
@@ -1110,13 +1110,15 @@ int introduceNewInstanceUsingAHandCraftedDescriptor( string dataset_path,
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-int selectAnInstancefromSpecificCategory(unsigned int category_index, 
-					 unsigned int &instance_number, 
-					 string &Instance)
+int selectAnInstancefromSpecificCategory( unsigned int category_index, 
+										  unsigned int &instance_number, 
+										  string &Instance)
 {
-    std::string path;
-    path =  home_directory_address +"/Category/Category.txt";
-    //ROS_INFO("path = %s",path.c_str());
+    std::string dataset_path;
+	ros::param::get("/perception/dataset_path", dataset_path);
+	std::string path =  dataset_path +"/Category/Category.txt";
+	// ROS_INFO("path = %s",path.c_str());
+    
     //ROS_INFO("TEST");
 	ROS_INFO("\n");
     ROS_INFO("\t\t[-] category index = %d",category_index);
@@ -1143,7 +1145,7 @@ int selectAnInstancefromSpecificCategory(unsigned int category_index,
 		return -1;
     }
     
-    path = home_directory_address +"/"+ categoryAddresstmp.c_str();
+	path = dataset_path +"/"+ categoryAddresstmp.c_str();
     
     std::ifstream categoyInstances (path.c_str());
     std::string PCDFileAddressTmp;
@@ -2322,36 +2324,47 @@ vector <int> generateSequence (int n)
     }
     
     return(sequence);
- // test :
-//     vector <int> test;
-//     test = generateSequence(15);
-//     for (int i = 0; i< test.size(); i++)
-//     {
-// 		printf(" %i,",test.at(i));
-//     }
+	// test :
+	//     vector <int> test;
+	//     test = generateSequence(15);
+	//     for (int i = 0; i< test.size(); i++)
+	//     {
+	// 		printf(" %i,",test.at(i));
+	//     }
 }
 
 int generateRrandomSequencesInstances (string path)
 {    
-    string path1= home_directory_address + path;    
- //   ROS_INFO("\n path-instance_original= %s \n",path1.c_str());
+    // string path1= home_directory_address + path;    
+   	
+	std::string dataset_path;
+	ros::param::get("/perception/dataset_path", dataset_path);
+	
+	std::string path1;
+	path1 =  dataset_path + path;
+	// ROS_INFO("path1 = %s",path.c_str());
+	// ROS_INFO("\n path-instance_original= %s \n",path1.c_str());
 
     std::ifstream listOfObjectInstancesAddress (path1.c_str());
     string InstanceAddresstmp = "";
     unsigned int number_of_exist_instances = 0;
     while (listOfObjectInstancesAddress.good()) 
     {
-	std::getline (listOfObjectInstancesAddress, InstanceAddresstmp);
-	if(InstanceAddresstmp.empty () || InstanceAddresstmp.at (0) == '#') // Skip blank lines or comments
-	    continue;
-	number_of_exist_instances++;
+		std::getline (listOfObjectInstancesAddress, InstanceAddresstmp);
+		if(InstanceAddresstmp.empty () || InstanceAddresstmp.at (0) == '#') // Skip blank lines or comments
+			continue;
+		number_of_exist_instances++;
     }
-   // ROS_INFO("\n number_of_exist_instances= %i \n",number_of_exist_instances);
+    
+	// ROS_INFO("\n number_of_instances= %i \n",number_of_exist_instances);
     
     InstanceAddresstmp = "";
     vector <int> instances_sequence = generateSequence (number_of_exist_instances);
     std::ofstream instances;
-    string path2 = home_directory_address + path;
+
+    // string path2 = home_directory_address + path;
+
+	string path2 =  dataset_path + path;
     path2.resize(path2.size()-12);
     path2+= ".txt";
     //ROS_INFO("\n reorder category = %s \n",path2.c_str());
@@ -2377,51 +2390,51 @@ int generateRrandomSequencesInstances (string path)
 int generateRrandomSequencesCategories (int RunCount)
 {
 
-    std::string path;
-    ROS_INFO ("home_directory_address = %s", home_directory_address.c_str());
+    ROS_INFO("\n\n");
+    ROS_INFO(" *****************************************************************");
+    ROS_INFO(" ****  shuffling data may take a few seconds, please wait!!!  ****");
+    ROS_INFO(" *****************************************************************");
 
-    path = home_directory_address +"/Category/Category_orginal.txt";
-    
+ 	std::string dataset_path;
+	ros::param::get("/perception/dataset_path", dataset_path);
+	std::string path =  dataset_path + "/Category/Category_orginal.txt";
+	// ROS_INFO("path = %s",path.c_str());
+
     std::ifstream listOfObjectCategoriesAddress (path.c_str());
-    ROS_INFO ("path = %s", path.c_str());
+    // ROS_INFO ("path = %s", path.c_str());
 
     string categoryAddresstmp = "";
     unsigned int number_of_exist_categories = 0;
     while (listOfObjectCategoriesAddress.good()) 
     {
-	std::getline (listOfObjectCategoriesAddress, categoryAddresstmp);
-	if(categoryAddresstmp.empty () || categoryAddresstmp.at (0) == '#') // Skip blank lines or comments
-	    continue;
-	number_of_exist_categories++;
+		std::getline (listOfObjectCategoriesAddress, categoryAddresstmp);
+		if(categoryAddresstmp.empty () || categoryAddresstmp.at (0) == '#') // Skip blank lines or comments
+			continue;
+		number_of_exist_categories++;
     }
         	
         	
     ROS_INFO ("number of category = %i", number_of_exist_categories);
-
     vector <int> categories_sequence = generateSequence (number_of_exist_categories);
-
-//     for (int i =0; i< categories_sequence.size();i++)
-//     {
-// 	ROS_INFO("S [%i]= %i",i, categories_sequence.at(i));
-//     }
     
     std::ofstream categoies;
-    string path2 = home_directory_address +"/Category/Category.txt";
+    string path2 = dataset_path +"/Category/Category.txt";
+
     categoies.open (path2.c_str(), std::ofstream::out);
     for (int i =0; i < categories_sequence.size(); i++)
     {
-	std::ifstream listOfObjectCategories (path.c_str());
-	int j = 0;
-	while ((listOfObjectCategories.good()) && (j < categories_sequence.at(i)))
-	{
-	    std::getline (listOfObjectCategories, categoryAddresstmp);
-	    generateRrandomSequencesInstances(categoryAddresstmp.c_str());
-	    j++;
-	}
-	categoryAddresstmp.resize(categoryAddresstmp.size()-12);
-	categoryAddresstmp+= ".txt";
-	categoies << categoryAddresstmp.c_str()<<"\n";
-    }
+		std::ifstream listOfObjectCategories (path.c_str());
+		int j = 0;
+		while ((listOfObjectCategories.good()) && (j < categories_sequence.at(i)))
+		{
+			std::getline (listOfObjectCategories, categoryAddresstmp);
+			generateRrandomSequencesInstances(categoryAddresstmp.c_str());
+			j++;
+		}
+		categoryAddresstmp.resize(categoryAddresstmp.size()-12);
+		categoryAddresstmp += ".txt";
+		categoies << categoryAddresstmp.c_str()<<"\n";
+		}
     return 0 ;
   
 }
@@ -3035,7 +3048,7 @@ int introduceNewCategoryRGBDDeepLearningUsingGOOD( string dataset_path,
 	string instance_path;
 	for(int i = 0; i < k ; i++)  // 2 instances would be enough
 	{
-// 	    selectAnInstancefromSpecificCategory(class_index, instance_number, instance_path);
+	    // selectAnInstancefromSpecificCategory(class_index, instance_number, instance_path);
 	    if (selectAnInstancefromSpecificCategory(class_index, instance_number, instance_path)==-1)
 	    {	
 			ROS_ERROR("\t\t[-] the object view or category does not exist");
@@ -3893,7 +3906,7 @@ int sum_all_experiments_results ( int iterations,
 
     std::string sumResultsOfExperiments;
     sumResultsOfExperiments = ros::package::getPath("rug_simulated_user") + "/result/sum_all_results_of_"+name_of_approach+"_experiments.txt";
-    // ROS_INFO("results of expriments file path = %s",sumResultsOfExperiments.c_str() );
+    ROS_INFO("results of expriments file path = %s",sumResultsOfExperiments.c_str() );
     int exp_num =1;
     if (!fexists(sumResultsOfExperiments.c_str()))
     {
@@ -3929,7 +3942,9 @@ int sum_all_experiments_results ( int iterations,
 		std::ofstream sum_results_of_experiments;
 		sum_results_of_experiments.open (sumResultsOfExperiments.c_str(), std::ofstream::out);
 		sum_results_of_experiments.precision(4);
-		sum_results_of_experiments <<value.at(0) <<"\n"<< value.at(1) <<"\n"<< value.at(2) <<"\n"<< value.at(3)<< "\n"<< value.at(4);
+		if (value.size() == 5 )
+			sum_results_of_experiments <<value.at(0) <<"\n"<< value.at(1) <<"\n"<< value.at(2) <<"\n"<< value.at(3)<< "\n"<< value.at(4);
+
 		sum_results_of_experiments.close();
     } 
 
