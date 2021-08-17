@@ -121,6 +121,6 @@ This error refers to this point that dpkg has been locked by other programs, you
 c++: internal compiler error: Killed (program cc1plus)
 ```
 
-It usually happens when the system does not have enough RAM to compile all the code. This can be easily handled by again running the "catkin_make" command in your terminal
+It usually happens when the system does not have enough resources (RAM/Cores) to compile all packages simultaneously. This can be easily handled by running the "catkin_make -j 2" command in your terminal. This way, ros will only use two cores. In particular, -j n,  specifies the number of jobs (commands) to run simultaneously. Defaults to the environment variable ROS_PARALLEL_JOBS and falls back to the number of CPU cores.
 
 
