@@ -140,7 +140,7 @@ int Hist_lenght = 0;
 
 ////TODO: home_directory_address should be pass as input argument
 //std::string home_directory_address= "/home/cognitiverobotics/datasets/washington_short_version/";
-std::string home_directory_address= "/home/hamidreza/datasets/restaurant_object_dataset/";
+std::string home_directory_address= "~/datasets/washington_short_version/";
 
 using namespace pcl;
 using namespace std;
