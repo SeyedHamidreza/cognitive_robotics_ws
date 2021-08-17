@@ -81,7 +81,7 @@ python -c 'import keras; print(keras.__version__)'
 
 ```
 
-## ROS packages
+## Clone ROS packages
 
 
 Create a catkin workspace, refer to: http://wiki.ros.org/catkin/Tutorials/create_a_workspace.
@@ -102,4 +102,25 @@ mv cognitive_robotics_ws src
 catkin_make
 ```
 
-TODO
+## Troubleshooting
+Here we provide a list of common errors and explain how to fix them. If the problem isn’t clear and you aren’t sure what to do next, contact TAs.
+
+
+#### 1- dpkg has been locked by other programs
+
+```sh
+[ERROR] Could not get lock /var/lib/dpkg/lock’ 
+```
+
+This error refers to this point that dpkg has been locked by other programs, you need to wait for a while and try it again
+
+
+#### 2- c++ internal compiler error
+
+```sh
+c++: internal compiler error: Killed (program cc1plus)
+```
+
+It usually happens when the system does not have enough RAM to compile all the code. This can be easily handled by again running the "catkin_make" command in your terminal
+
+
