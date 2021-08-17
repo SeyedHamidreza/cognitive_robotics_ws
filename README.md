@@ -33,12 +33,9 @@ You can simply use the provided bash script to install all necessary packages on
 Clone the repository and compile it:
 
 ```sh
-mkdir -p ~/cognitive_robotics_ws/src
-cd ~/cognitive_robotics_ws/
+cd ~
 git clone https://github.com/SeyedHamidreza/cognitive_robotics_ws.git
-rm -r src 
-mv cognitive_robotics_ws src
-mv src/*.sh ~/
+mv cognitive_robotics_ws/*.sh ~/
 ```
 
 There should be two bash files, namly setup_all_required_packages.sh and setup_bashrc.sh, in your home folder. 
