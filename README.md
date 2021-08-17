@@ -66,13 +66,13 @@ Towards this goal you need to copy the "setup_all_required_packages.sh" file in 
 cd ~
 sudo chmod +x setup_all_required_packages.sh
 ./setup_all_required_packages.sh
-
-source .bashrc
 ```
 
 Check the version of ROS, TF:
 
 ```bash
+source .bashrc
+
 # use the following line to check ROS version
 rosversion -d
 
