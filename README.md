@@ -97,17 +97,15 @@ python -c 'import keras; print(keras.__version__)'
 
 ## Compile ROS packages
 
-
-
 ```sh
 cd ~/cognitive_robotics_ws/
 catkin_make
 ```
 
-* Notes: 
+### Notes: 
 
-** Refer to http://wiki.ros.org/catkin/Tutorials/create_a_workspace if you are not familiar with creating a catkin workspace. 
-** If you faced with "c++ internal compiler error", use "catkin_make -j 2" instead of "catkin_make". Check the Troubleshooting section for more info.
+* Refer to http://wiki.ros.org/catkin/Tutorials/create_a_workspace if you are not familiar with creating a catkin workspace. 
+* If you faced with "c++ internal compiler error", use "catkin_make -j 2" instead of "catkin_make". Check the Troubleshooting section for more info.
 
 
 ## Troubleshooting
