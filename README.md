@@ -15,7 +15,7 @@ We break this assignment down into two parts:
 1. The first part is about implementing/optimizing offline 3D object recognition systems, which take an object view as input and produces the category label as output (e.g., apple, mug, fork, etc).
 
 <p align="center">
-  <img src="images/recognition_pipeline.png" width="500" title="">
+  <img src="images/recognition_pipeline.png" width="700" title="">
 </p>
 <p align="center">
   Fig.1 Abstract architecture for an offline object recognition
