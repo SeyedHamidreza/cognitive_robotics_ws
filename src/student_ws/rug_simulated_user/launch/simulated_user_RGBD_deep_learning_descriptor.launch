@@ -51,14 +51,18 @@
 		<arg name="random_sequence_generator" default="1" />
 		<param name="/perception/random_sequence_generator" type="bool" value = "$(arg random_sequence_generator)"/>
 
+		<!--gui 0 = FLASE, 1 = TRUE-->
+		<arg name="gui" default="1" />
+		<param name="/perception/gui" type="bool" value = "$(arg gui)"/>
+
 
 	<!-- ****************************************  -->
 	<!--       set dataset_path parameter          -->
 	<!-- ****************************************  -->
 
 		<!-- restaurant_object_dataset : "$(env HOME)/datasets/restaurant_object_dataset/"; -->
-		<!-- washington_RGBD_object : "$(env HOME)/datasets/washington_RGBD_object/"; -->
-		<arg name="dataset_path" default="$(env HOME)/datasets/washington_RGBD_object/" />
+		<!-- washington_RGBD_object : "$(env HOME)/datasets/washington_short_version/"; -->
+		<arg name="dataset_path" default="$(env HOME)/datasets/washington_short_version/" />
 		<param name="/perception/dataset_path" type="string" value = "$(arg dataset_path)"/>
 
 	
