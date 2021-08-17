@@ -90,6 +90,12 @@ cd ~/
 
 source .bashrc
 
+echo "-------- [Step-5] update and install python --------"
+
+sudo apt-get install software-properties-common
+sudo apt-add-repository universe
+sudo apt-get update
+
 sudo apt install python3-pip
 pip3 install numpy matplotlib pandas seaborn
 
