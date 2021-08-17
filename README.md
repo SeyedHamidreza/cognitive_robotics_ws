@@ -102,6 +102,9 @@ mv cognitive_robotics_ws src
 catkin_make
 ```
 
+* NOTE: If you faced with "c++ internal compiler error", use "catkin_make -j 2" instead of "catkin_make". Check the Troubleshooting section for more info.
+
+
 ## Troubleshooting
 Here we provide a list of common errors and explain how to fix them. If the problem isn’t clear and you aren’t sure what to do next, contact TAs.
 
