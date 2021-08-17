@@ -12,7 +12,7 @@
 
 	<!-- _________________________________-->
 	<!--|                                 |-->
-	<!--|             Memory 		      |-->
+	<!--|             Memory 	      |-->
 	<!--|_________________________________|-->
 
 	<!--Launches a race_perception_db node(let) -->
@@ -62,9 +62,9 @@
 		<param name="/perception/dataset_path" type="string" value = "$(arg dataset_path)"/>
 
 	
-	<!-- **********************************************  -->
-	<!-- 	set deep_learning_architecture and service parameters    -->
-	<!-- **********************************************  -->
+	<!-- ************************************************************  -->
+	<!-- 	set deep_learning_architecture and service parameters      -->
+	<!-- ************************************************************  -->
 
 		<arg name="deep_learning_service" default="/RGBD_multiview_service" />
 		<param name="/perception/deep_learning_service" type="string" value = "$(arg deep_learning_service)"/>
@@ -86,7 +86,7 @@
 
 		
 	<!-- ****************************************  -->
-	<!--       		KNN parameters 			       -->
+	<!--       	KNN parameters 		       -->
 	<!-- ****************************************  -->
 		
 		<!-- K param for KNN -->
@@ -95,7 +95,7 @@
 
 
 	<!-- ****************************************  -->
-	<!--       		Multi View param		       -->
+	<!--       	Multi View param	       -->
 	<!-- ****************************************  -->
 	
 		<!-- radius - used for generating camera poses -->
@@ -123,7 +123,7 @@
 	
 
 	<!-- ****************************************  -->
-	<!--       		distance functions		       -->
+	<!--       	distance functions	       -->
 	<!-- ****************************************  -->
 	
 		<!-- The following distance functions have been implemeneted and can be used: 
