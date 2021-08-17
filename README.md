@@ -81,4 +81,25 @@ python -c 'import keras; print(keras.__version__)'
 
 ```
 
+## ROS packages
+
+
+Create a catkin workspace, refer to: http://wiki.ros.org/catkin/Tutorials/create_a_workspace.
+
+```sh
+mkdir -p ~/cognitive_robotics_ws/src
+cd ~/cognitive_robotics_ws/
+catkin_make
+```
+
+Clone the repository and compile it:
+
+```sh
+cd ~/cognitive_robotics_ws/
+git clone https://github.com/SeyedHamidreza/single_arm.git
+rm -r src 
+mv cognitive_robotics_ws src
+catkin_make
+```
+
 TODO
