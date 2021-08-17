@@ -43,8 +43,9 @@
 		<!--       set dataset_path parameter          -->
 		<!-- ****************************************  -->
 
-			<!-- restaurant_object_dataset : "$(env HOME)/datasets/restaurant_object_dataset/"; -->
-			<!-- modelnet10 : "$(env HOME)/datasets/modelnet10/"; -->
+			<!-- restaurant_object_dataset = "$(env HOME)/datasets/restaurant_object_dataset/"; -->
+			<!-- washington_RGBD_object : "$(env HOME)/datasets/washington_RGBD_object/"; -->
+
 			<arg name="dataset_path" default="$(env HOME)/datasets/restaurant_object_dataset/" />				
 			<param name="/perception/dataset_path" type="string" value = "$(arg dataset_path)"/>
 
