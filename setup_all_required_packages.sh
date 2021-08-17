@@ -88,6 +88,8 @@ sudo ldconfig
 
 cd ~/
 
+source .bashrc
+
 echo "-------- Installation completed --------"
 
 
