@@ -96,7 +96,7 @@ Clone the repository and compile it:
 
 ```sh
 cd ~/cognitive_robotics_ws/
-git clone https://github.com/SeyedHamidreza/single_arm.git
+git clone https://github.com/SeyedHamidreza/cognitive_robotics_ws.git
 rm -r src 
 mv cognitive_robotics_ws src
 catkin_make
