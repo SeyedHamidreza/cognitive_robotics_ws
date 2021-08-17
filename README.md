@@ -29,7 +29,6 @@ You can simply use the provided bash script to install all necessary packages on
 
 ## Clone ROS packages
 
-
 Clone the repository in your home:
 
 ```sh
@@ -37,7 +36,6 @@ cd ~
 git clone https://github.com/SeyedHamidreza/cognitive_robotics_ws.git
 mv cognitive_robotics_ws/*.sh ~/
 ```
-
 
 After runnging the above commands, a folder named "cognitive_robotics_ws" and two bash files, i.e. "setup_all_required_packages.sh" and "setup_bashrc.sh", should be exist in your home folder. 
 Then, run the following lines:
@@ -102,7 +100,7 @@ cd ~/cognitive_robotics_ws/
 catkin_make
 ```
 
-### Notes: 
+#### Notes: 
 
 * Refer to http://wiki.ros.org/catkin/Tutorials/create_a_workspace if you are not familiar with creating a catkin workspace. 
 * If you faced with "c++ internal compiler error", use "catkin_make -j 2" instead of "catkin_make". Check the Troubleshooting section for more info.
