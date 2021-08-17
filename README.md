@@ -24,7 +24,7 @@ For detailed instructions, please read the [assignment description](https://gith
 
 ## Requirements and Installation
 
-you can simply use the provided bash script to install all necessary packages on your machine:
+You can simply use the provided bash script to install all necessary packages on your machine. Let's see how to do that:
 
 ```bash
 cd ~
