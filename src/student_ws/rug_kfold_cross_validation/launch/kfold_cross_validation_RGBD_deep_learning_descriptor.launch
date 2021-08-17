@@ -68,6 +68,9 @@
 			<arg name="modelnet_dataset" default="1" /> 
 			<param name="/perception/modelnet_dataset" type="bool" value = "$(arg modelnet_dataset)"/>
 
+			<!--gui 0 = FLASE, 1 = TRUE-->
+			<arg name="gui" default="1" />
+			<param name="/perception/gui" type="bool" value = "$(arg gui)"/>
 
 		<!-- **********************************************  -->
 		<!-- 	set deep_learning_service and base_network parameters    -->
