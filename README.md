@@ -35,7 +35,7 @@ We break this assignment down into two parts:
 
 
 
-## Requirements and Installation
+## Installation
 
 You can simply use the provided bash script to install all necessary packages on your machine. Let's see how to do that:
 
