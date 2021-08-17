@@ -519,6 +519,9 @@ int main(int argc, char** argv)
 
     //// get list of all object categories
     vector <ObjectCategory> list_of_object_category = _pdb->getAllObjectCat();
+    while (list_of_object_category.size() == 0)
+		list_of_object_category = _pdb->getAllObjectCat();
+
     ROS_INFO(" %d categories exist in the perception database ", list_of_object_category.size() );
 
     //// initialize confusion_matrix
