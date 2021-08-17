@@ -28,7 +28,7 @@ you can simply use the provided bash script to install all necessary packages on
 
 ```bash
 cd ~
-sudo chmod +x .bashrc
+sudo chmod +x setup_bashrc.sh
 ./setup_bashrc.sh
 ```
 
@@ -57,5 +57,15 @@ export LC_NUMERIC="en_US.UTF-8"
 alias python='/usr/bin/python2.7'
 
 ```
+
+
+then, you need to install all the necessary packages and softwares, including, ROS melodic, TF, Keras, and Leveldb. 
+
+```bash
+cd ~
+sudo chmod +x setup_all_required_packages.sh
+./setup_all_required_packages.sh
+```
+
 
 TODO
