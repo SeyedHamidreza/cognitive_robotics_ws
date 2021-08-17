@@ -213,6 +213,7 @@ def handle_deep_representation(req):
     multiviews = 1 #TRUE 
     pooling_function = "MAX" #TRUE 
     number_of_bins = 150
+    gui = True
     if rospy.has_param('/perception/image_normalization'):
         image_normalization = rospy.get_param("/perception/image_normalization")
         #print ("########## image_normalization (0 : FALSE, 1 : TRUE) = " + str(image_normalization))
@@ -232,6 +233,10 @@ def handle_deep_representation(req):
     if rospy.has_param('/perception/orthographic_image_resolution'):
         number_of_bins = rospy.get_param("/perception/orthographic_image_resolution")
         print ("\t - orthographic_image_resolution = " + str(number_of_bins)) 
+
+    if rospy.has_param('/perception/gui'):
+        gui = rospy.get_param("/perception/gui")
+        print ("\t - gui = " + str(gui)) 
 
     #__________________________
     #|                         |
@@ -293,13 +298,16 @@ def handle_deep_representation(req):
         cv_rgb_image = bridge.imgmsg_to_cv2(req.RGB_image, "bgr8")
         resized_rgb_img, othographic_image = preprocessingForOrthographicImages(cv_rgb_image, image_size)                            
 
-        cv2.imshow('RGB_image', resized_rgb_img)
-        cv2.waitKey(1)
+        if (gui):
+            cv2.imshow('RGB_image', resized_rgb_img)
+            cv2.waitKey(1)
 
         cv_depth_image = bridge.imgmsg_to_cv2(req.depth_image, "bgr8")      
         resized_depth_img, othographic_depth_image = preprocessingForOrthographicImages(cv_depth_image, image_size)                
-        cv2.imshow('Depth_image', resized_depth_img)
-        cv2.waitKey(1)
+       
+        if (gui):
+            cv2.imshow('Depth_image', resized_depth_img)
+            cv2.waitKey(1)
 
         #### encode RGB image
         with graph.as_default():
