@@ -1197,6 +1197,12 @@ int introduceNewCategoryUsingAHandCraftedDescriptor(string dataset_path,
 													int k)
 {
 	if (k < 3) k = 3;
+
+	ROS_INFO(" *****************************************************************");
+    ROS_INFO(" **** teaching a new object category using %d instances ****", k);
+    ROS_INFO(" *****************************************************************");
+
+
 	int adaptive_support_lenght = 0; // 0 true 1 false
 	double global_image_width = 0.2;
 	int threshold = 10; // threshold on number of positive and negative points
@@ -3067,7 +3073,11 @@ int introduceNewCategoryRGBDDeepLearningUsingGOOD( string dataset_path,
 												ros::ServiceClient deep_learning_server,
 												int k)
 {
-	ROS_INFO("\t\t[-] teaching a new object category using %d instances", k);
+
+	ROS_INFO(" *****************************************************************");
+    ROS_INFO(" **** teaching a new object category using %d instances ****", k);
+    ROS_INFO(" *****************************************************************");
+
 	if (k < 3) k = 3;
 	string instance_path;
 	for(int i = 0; i < k ; i++)  // 2 instances would be enough
