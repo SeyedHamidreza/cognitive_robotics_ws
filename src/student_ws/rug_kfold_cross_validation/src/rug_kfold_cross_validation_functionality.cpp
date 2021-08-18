@@ -2356,9 +2356,13 @@ int conceptualizingVFHTrainData( int &track_id,
 		pp.info(std::ostringstream().flush() << "path: " << pcd_file_address.c_str());
 		//load a PCD object   
 		boost::shared_ptr<PointCloud<PointT> > target_pc (new PointCloud<PointT>);
-		if (pcl::io::loadPCDFile <PointXYZRGBA> (pcd_file_address.c_str(), *target_pc) == -1)
-		{	
-			ROS_ERROR("\t\t[-]-Could not read given object %s :",pcd_file_address.c_str());
+		try 
+		{ 
+			io::loadPCDFile <PointXYZRGBA> (pcd_file_address.c_str(), *target_pc) ;
+		} 
+		catch (const std::exception& e) 
+		{ 
+			ROS_ERROR("\t\t[-] could not read given object %s :", pcd_file_address.c_str());					
 			return(0);
 		}
 		pp.info(std::ostringstream().flush() << "The size of given point cloud  = " << target_pc->points.size() );
@@ -2488,11 +2492,16 @@ int conceptualizingESFTrainData( int &track_id,
 		//pp.info(std::ostringstream().flush() << "path: " << pcd_file_address.c_str());
 		//load a PCD object   
 		boost::shared_ptr<PointCloud<PointT> > target_pc (new PointCloud<PointT>);
-		if (pcl::io::loadPCDFile <PointT> (pcd_file_address.c_str(), *target_pc) == -1)
-		{	
-			ROS_ERROR("\t\t[-]-Could not read given object %s :",pcd_file_address.c_str());
+		try 
+		{ 
+			io::loadPCDFile <PointXYZRGBA> (pcd_file_address.c_str(), *target_pc) ;
+		} 
+		catch (const std::exception& e) 
+		{ 
+			ROS_ERROR("\t\t[-] could not read given object %s :", pcd_file_address.c_str());					
 			return(0);
 		}
+		
 		//pp.info(std::ostringstream().flush() << "The size of given point cloud  = " << target_pc->points.size() );
 		
 		/* __________________________________________________________
@@ -2641,10 +2650,14 @@ int conceptualizingGRSDTrainData(   int &track_id,
 	pp.info(std::ostringstream().flush() << "path: " << pcd_file_address.c_str());
 	//load a PCD object   
 	boost::shared_ptr<PointCloud<PointT> > target_pc (new PointCloud<PointT>);
-	if (pcl::io::loadPCDFile <PointXYZRGBA> (pcd_file_address.c_str(), *target_pc) == -1)
-	{	
-	    ROS_ERROR("\t\t[-]-Could not read given object %s :",pcd_file_address.c_str());
-	    return(0);
+	try 
+	{ 
+		io::loadPCDFile <PointXYZRGBA> (pcd_file_address.c_str(), *target_pc) ;
+	} 
+	catch (const std::exception& e) 
+	{ 
+		ROS_ERROR("\t\t[-] could not read given object %s :", pcd_file_address.c_str());					
+		return(0); 
 	}
 	pp.info(std::ostringstream().flush() << "The size of given point cloud  = " << target_pc->points.size() );
 
@@ -3607,11 +3620,21 @@ int conceptualizingDeepLearningBasedOnRGBAndOrthographicImages( int &track_id,
 		pp.info(std::ostringstream().flush() << "path: " << pcd_file_address.c_str());
 		//load a PCD object   
 		boost::shared_ptr<PointCloud<PointT> > target_pc (new PointCloud<PointT>);
-		if (pcl::io::loadPCDFile <PointT> (pcd_file_address.c_str(), *target_pc) == -1)
-		{	
-			ROS_ERROR("\t\t[-] could not read given object %s :",pcd_file_address.c_str());
-			continue;
+		// if (pcl::io::loadPCDFile <PointT> (pcd_file_address.c_str(), *target_pc) == -1)
+		// {	
+		// 	ROS_ERROR("\t\t[-] could not read given object %s :",pcd_file_address.c_str());
+		// 	continue;
+		// }
+		try 
+		{ 
+			io::loadPCDFile <PointXYZRGBA> (pcd_file_address.c_str(), *target_pc) ;
+		} 
+		catch (const std::exception& e) 
+		{ 
+			ROS_ERROR("\t\t[-] could not read given object %s :", pcd_file_address.c_str());					
+			continue; 
 		}
+		
 		//pp.info(std::ostringstream().flush() << "The size of given point cloud  = " << target_pc->points.size() );
 	
 		//downsampling 0 = false 1 = true
@@ -4010,11 +4033,16 @@ int conceptualizingGOODTrainData( int &track_id,
 		pp.info(std::ostringstream().flush() << "path: " << pcd_file_address.c_str());
 		//load a PCD object   
 		boost::shared_ptr<PointCloud<PointT> > target_pc (new PointCloud<PointT>);
-		if (pcl::io::loadPCDFile <PointXYZRGBA> (pcd_file_address.c_str(), *target_pc) == -1)
-		{	
-			ROS_ERROR("\t\t[-]-Could not read given object %s :",pcd_file_address.c_str());
+		try 
+		{ 
+			io::loadPCDFile <PointXYZRGBA> (pcd_file_address.c_str(), *target_pc) ;
+		} 
+		catch (const std::exception& e) 
+		{ 
+			ROS_ERROR("\t\t[-] could not read given object %s :", pcd_file_address.c_str());					
 			return(0);
 		}
+
 		pp.info(std::ostringstream().flush() << "The size of given point cloud  = " << target_pc->points.size() );
 		
 		/* __________________________________________________________

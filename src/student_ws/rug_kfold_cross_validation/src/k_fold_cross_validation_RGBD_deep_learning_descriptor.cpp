@@ -471,7 +471,7 @@ int main(int argc, char** argv)
                                                           dataset_path,
                                                           orthographic_image_resolution);
 
-	//// get toc
+	    //// get toc
         ros::Duration duration = ros::Time::now() - beginProc;
         training_time = duration.toSec();
         ros::param::set("/training_time", training_time);
@@ -530,7 +530,12 @@ int main(int argc, char** argv)
             for (size_t j = 0; j < list_of_object_category.at(i).rtov_keys.size(); j++) 
             {
                 vector<SITOV> objects_views_histograms = _pdb->getSITOVs(list_of_object_category.at(i).rtov_keys.at(j).c_str());
-            
+                while (objects_views_histograms.size() == 0)
+                {
+                    objects_views_histograms = _pdb->getSITOVs(list_of_object_category.at(i).rtov_keys.at(j).c_str());
+                    ros::Duration(0.2).sleep(); // sleep for 0.2 a second
+                }	
+                
                 if (objects_views_histograms.size() > 0)
                 {
                     SITOV object_representation;
