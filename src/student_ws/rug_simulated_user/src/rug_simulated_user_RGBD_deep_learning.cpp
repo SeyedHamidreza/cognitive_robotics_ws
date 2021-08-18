@@ -469,9 +469,11 @@ int main(int argc, char** argv)
 	
 
 	vector <ObjectCategory> list_of_object_category = _pdb->getAllObjectCat();
-
 	while (list_of_object_category.size() == 0)
+	{
 		list_of_object_category = _pdb->getAllObjectCat();
+		ros::Duration(0.2).sleep(); // sleep for 0.2 a second
+	}
 
 	/* ______________________________
 	|                                |
@@ -499,8 +501,13 @@ int main(int argc, char** argv)
 															K_for_KNN) == -1)  
 		{
 			ROS_INFO("\t\t[-] *NOTE: the experiment is terminated because there is not enough test data to continue the evaluation");
+			summary_of_experiment.open( evaluation_file.c_str(), std::ofstream::app);   
+			summary_of_experiment << "\n-----------------------------------------------------------------------------------------------------------------------------------------";
+			summary_of_experiment << " *NOTE: the experiment is terminated because there is not enough test data to continue the evaluation";
+			summary_of_experiment << "\n-----------------------------------------------------------------------------------------------------------------------------------------";
+			summary_of_experiment.close();
+
 			ros::Duration duration = ros::Time::now() - begin_process;
-			
 			reportCurrentResults( TP, FP, FN, evaluation_file, true);
 
 			reportExperimentResult( average_class_precision,
@@ -527,7 +534,7 @@ int main(int argc, char** argv)
 			return (0) ;
 	    }
 
-	
+		
 	    number_of_instances += 3; // we use three instances to initialize a category
 	    number_of_taught_categories ++;
 	    category_introduced << "1\n";
@@ -556,7 +563,7 @@ int main(int argc, char** argv)
 			ROS_INFO("\t\t[-] c:%i",c);
 			ROS_INFO("\t\t[-] instance number:%i",instance_number2.at(c-1));
 			//info for debug
-			ROS_INFO("\t\t[-] home address parameter : %s", dataset_path.c_str());
+			ROS_INFO("\t\t[-] dataset : %s", dataset_path.c_str());
 			ROS_INFO("\t\t[-] number_of_categories : %i", number_of_categories);
 			ROS_INFO("\t\t[-] protocol_threshold : %lf", protocol_threshold);
 			ROS_INFO("\t\t[-] user_sees_no_improvment_const : %i", user_sees_no_improvment_const);
@@ -575,6 +582,12 @@ int main(int argc, char** argv)
 				ROS_INFO("\t\t[-] *NOTE: the experiment is terminated because there is not enough test data to continue the evaluation");
 				category_introduced.close();
 
+				summary_of_experiment.open( evaluation_file.c_str(), std::ofstream::app);   
+				summary_of_experiment << "\n-----------------------------------------------------------------------------------------------------------------------------------------";
+				summary_of_experiment << " *NOTE: the experiment is terminated because there is not enough test data to continue the evaluation";
+				summary_of_experiment << "\n-----------------------------------------------------------------------------------------------------------------------------------------";
+				summary_of_experiment.close();
+				
 				ros::Duration duration = ros::Time::now() - begin_process;
 			
 				reportExperimentResult( average_class_precision,
@@ -597,8 +610,6 @@ int main(int argc, char** argv)
 				plotGlobalF1VsNumberOfLearnedCategoriesInMatlab( experiment_number, f1_vs_learned_category.c_str());
 				plotNumberOfLearnedCategoriesVsIterationsInMatlab( experiment_number, category_introduced_txt.c_str());
 				plotNumberOfStoredInstancesPerCategoryInMatlab( list_of_object_category);
-
-
 				// system_command = "cp " + dataset_path + "/Category/Category.txt " + ros::package::getPath("rug_simulated_user") + "/result/experiment_1";
 				// system( system_command.c_str());
 				return (0) ;	    
@@ -610,10 +621,14 @@ int main(int argc, char** argv)
 				
 				//load an instance from file
 				boost::shared_ptr<PointCloud<PointT> > target_pc (new PointCloud<PointT>);
-				if (io::loadPCDFile <PointXYZRGBA> (instance_path.c_str(), *target_pc) == -1)
-				{	
+				try 
+				{ 
+					io::loadPCDFile <PointXYZRGBA> (instance_path.c_str(), *target_pc) ;
+				} 
+				catch (const std::exception& e) 
+				{ 
 					ROS_ERROR("\t\t[-] could not read given object %s :", instance_path.c_str());					
-					continue;
+					continue; 
 				}		   
 				ROS_INFO("\t\t[-] track_id: %i , \tview_id: %i ", track_id, view_id );
 			
@@ -704,7 +719,10 @@ int main(int argc, char** argv)
 				//// get list of all object categories
 				list_of_object_category = _pdb->getAllObjectCat();
 				while (list_of_object_category.size() == 0)
+				{
 					list_of_object_category = _pdb->getAllObjectCat();
+					ros::Duration(0.2).sleep(); // sleep for 0.2 a second
+				}	
 
 				ROS_INFO("\t\t[-] %d categories exist in the perception database ", list_of_object_category.size() );
 				
@@ -728,7 +746,12 @@ int main(int argc, char** argv)
 						for (size_t j = 0; j < list_of_object_category.at(i).rtov_keys.size(); j++) 
 						{
 							vector<SITOV> objectViewHistogram = _pdb->getSITOVs(list_of_object_category.at(i).rtov_keys.at(j).c_str());
-
+							while (objectViewHistogram.size() == 0)
+							{
+								objectViewHistogram = _pdb->getSITOVs(list_of_object_category.at(i).rtov_keys.at(j).c_str());
+								ros::Duration(0.2).sleep(); // sleep for 0.2 a second
+							}
+								
 							if (objectViewHistogram.size() > 0)
 								category_instances.push_back(objectViewHistogram.at(0));                      
 						}

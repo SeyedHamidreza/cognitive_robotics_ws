@@ -243,17 +243,19 @@ string extractObjectNameSimulatedUser (string object_name_orginal )
  
 string extractCategoryName (string InstancePath )
 {
+	
 	// ROS_INFO("\t\t ****************** instance_path = %s", InstancePath.c_str());
     string categoryName="";	    
     int ffind = InstancePath.find("//")+2;  
  	// ROS_INFO("\t\t left = %d", ffind);
     int lfind =  InstancePath.find("_Cat");       
  	// ROS_INFO("\t\t right = %d", lfind);
-
     for (int i=0; i<(lfind-ffind); i++)
     {
 		categoryName += InstancePath.at(i+ffind);
     }
+	// ROS_INFO("\t\t categoryName = %s", categoryName);
+
     return (categoryName);
 }
 
@@ -983,16 +985,27 @@ int introduceNewInstanceUsingAHandCraftedDescriptor( string dataset_path,
     PCDFileAddress = dataset_path +"/"+ PCDFileAddress.c_str();
 
     //load a PCD object  
-    boost::shared_ptr<PointCloud<PointT> > target_pc (new PointCloud<PointT>);
-    if (io::loadPCDFile <PointXYZRGBA> (PCDFileAddress.c_str(), *target_pc) == -1)
-    {	
-	    ROS_ERROR("\t\t[-]-Could not read given object %s :",PCDFileAddress.c_str());
-	    return(0);
-    }
-    else
-    {
-	    ROS_INFO("\t\t[1]-adding a new instance : %s", PCDFileAddress.c_str());
-    }
+    boost::shared_ptr<PointCloud<PointT> > target_pc (new PointCloud<PointT>);    
+	try 
+	{ 
+		io::loadPCDFile <PointXYZRGBA> (PCDFileAddress.c_str(), *target_pc);
+	} 
+	catch (const std::exception& e) 
+	{ 
+		ROS_ERROR("\t\t[-] could not read given object %s :", PCDFileAddress.c_str());					
+		return(0);
+	}
+	ROS_INFO("\t\t[1]-adding a new instance : %s", PCDFileAddress.c_str());
+	
+	// if (io::loadPCDFile <PointXYZRGBA> (PCDFileAddress.c_str(), *target_pc) == -1)
+    // {	
+	//     ROS_ERROR("\t\t[-]-Could not read given object %s :",PCDFileAddress.c_str());
+	//     return(0);
+    // }
+    // else
+    // {
+	//     ROS_INFO("\t\t[1]-adding a new instance : %s", PCDFileAddress.c_str());
+    // }
        
 	SITOV object_representation;
 
@@ -1120,7 +1133,7 @@ int selectAnInstancefromSpecificCategory( unsigned int category_index,
 	// ROS_INFO("path = %s",path.c_str());
     
     //ROS_INFO("TEST");
-	ROS_INFO("\n");
+	// ROS_INFO("\n");
     ROS_INFO("\t\t[-] category index = %d",category_index);
     ROS_INFO("\t\t[-] instance_number = %d",instance_number);
 
@@ -1150,14 +1163,14 @@ int selectAnInstancefromSpecificCategory( unsigned int category_index,
     std::ifstream categoyInstances (path.c_str());
     std::string PCDFileAddressTmp;
     
-    unsigned int inst_number =0;
+    unsigned int inst_number = 0;
     while ((categoyInstances.good ()) && (inst_number < instance_number))// read instances of a category 
     {	
 		std::getline (categoyInstances, PCDFileAddressTmp);
 		if(PCDFileAddressTmp.empty () || PCDFileAddressTmp.at (0) == '#') // Skip blank lines or comments
 			continue;
 		if (inst_number < instance_number)
-	    inst_number ++;
+	    	inst_number ++;
     }
     if (inst_number < instance_number)
     {
@@ -1683,16 +1696,26 @@ int IntroduceNewInstanceRGBDDeepLearningUsingGOOD ( string dataset_path,
 
     //load a PCD object  
     boost::shared_ptr<PointCloud<PointT> > target_pc (new PointCloud<PointT>);
-    if (io::loadPCDFile <PointXYZRGBA> (PCDFileAddress.c_str(), *target_pc) == -1)
-    {	
-	    ROS_ERROR("\t\t[-]-Could not read given object %s :",PCDFileAddress.c_str());
-	    return(-1);
-    }
-    else
-    {
-	    //ROS_INFO("\t\t[1]-IntroduceNewInstance using GOOD descriptor : Loaded a point cloud: %s", PCDFileAddress.c_str());
-    }
+    // if (io::loadPCDFile <PointXYZRGBA> (PCDFileAddress.c_str(), *target_pc) == -1)
+    // {	
+	//     ROS_ERROR("\t\t[-]-Could not read given object %s :",PCDFileAddress.c_str());
+	//     return(-1);
+    // }
+    // else
+    // {
+	//     //ROS_INFO("\t\t[1]-IntroduceNewInstance using GOOD descriptor : Loaded a point cloud: %s", PCDFileAddress.c_str());
+    // }
        
+	try 
+	{ 
+		io::loadPCDFile <PointXYZRGBA> (PCDFileAddress.c_str(), *target_pc) ;
+	} 
+	catch (const std::exception& e) 
+	{ 
+		ROS_ERROR("\t\t[-] could not read given object %s :", PCDFileAddress.c_str());					
+	    return(-1);
+	}	
+	
 
     /* ________________________________________________
     |                                                 |
@@ -1748,8 +1771,8 @@ int IntroduceNewInstanceRGBDDeepLearningUsingGOOD ( string dataset_path,
 	img_name = "/tmp/"+ view_with_max_enntropy +"_merged.jpg";
 	cv_ptr_depth->image = cv::imread(img_name.c_str(), CV_LOAD_IMAGE_COLOR);      
 
-	if(isImageEmpty(cv_ptr_depth))
-		return -1;
+	// if(isImageEmpty(cv_ptr_depth))
+	// 	return -1;
 
 
 	/// fill deep msg
@@ -3044,6 +3067,7 @@ int introduceNewCategoryRGBDDeepLearningUsingGOOD( string dataset_path,
 												ros::ServiceClient deep_learning_server,
 												int k)
 {
+	ROS_INFO("\t\t[-] teaching a new object category using %d instances", k);
 	if (k < 3) k = 3;
 	string instance_path;
 	for(int i = 0; i < k ; i++)  // 2 instances would be enough
@@ -3077,7 +3101,7 @@ int introduceNewCategoryRGBDDeepLearningUsingGOOD( string dataset_path,
 	    
 	    track_id++;
 	    //view_id ++; // in this implementation we consider VID as a constant
-
+		cout << endl;
 	}
 	// extracting the category name 
 	string categoryName=extractCategoryName(instance_path);
@@ -3781,8 +3805,10 @@ void plotNumberOfStoredInstancesPerCategoryInMatlab( vector <ObjectCategory> lis
 
     ROS_INFO("\t\t[-] Cleaning log files ...");
 
-	string system_command= "rm " + ros::package::getPath("rug_simulated_user") + "/result/experiment_1/Category.txt";
-	system( system_command.c_str());
+	string system_command;
+
+	// system_command = "rm " + ros::package::getPath("rug_simulated_user") + "/result/experiment_1/Category.txt";
+	// system( system_command.c_str());
 
 	system_command= "rm " + ros::package::getPath("rug_simulated_user") + "/result/experiment_1/Category_Introduced.txt";
 	system( system_command.c_str());
