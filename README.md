@@ -41,7 +41,7 @@ In this assignment, students have to optimize an open-ended learning approach fo
 You can simply use the provided bash script to install all necessary packages on your machine. Let's see how to do that:
 
 
-## Clone and Compile ROS packages
+### Clone and Compile ROS packages
 
 Clone the repository in your home:
 
