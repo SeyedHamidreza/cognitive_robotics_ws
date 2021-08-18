@@ -151,7 +151,7 @@ c++: internal compiler error: Killed (program cc1plus)
 
 It usually happens when the system does not have enough resources (RAM/Cores) to compile all packages simultaneously. This can be easily handled by running the "catkin_make -j 2" command in your terminal. This way, ROS will only use two cores. In particular, -j n,  specifies the number of jobs (commands) to run simultaneously. Defaults to the environment variable ROS_PARALLEL_JOBS and falls back to the number of CPU cores.
 
-#### 3- 
+#### 3- not executable 
 
 ```sh
 [rosrun] Couldn't find executable named multi_view_RGBD_object_representation.py below .../cognitive_robotics_ws/src/student_ws/rug_deep_feature_extraction
@@ -160,4 +160,12 @@ It usually happens when the system does not have enough resources (RAM/Cores) to
 ```sh
 roscd rug_deep_feature_extraction
 chmod +x src/*
+```
+
+#### 4- opencv version
+if you face with opencv related error, you need to remove opencv-python and then check the version of cv2 (3.2.0)
+
+```sh
+sudo pip uninstall opencv-python
+python -c 'import cv2; print(cv2.__version__)'
 ```
