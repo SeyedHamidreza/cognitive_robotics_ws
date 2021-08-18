@@ -54,7 +54,7 @@ done
 
 echo "-------- Ready to install required packages --------"
 
-yes Y | sudo apt-get install ros-melodic-desktop-full ros-melodic-hector-gazebo ros-melodic-openni-camera ros-melodic-roslisp python-rosinstall python-rdflib mercurial git openjdk-11-jdk libcgal-dev libpcl-dev libpstreams-dev libgraphviz-dev python-shapely python-networkx python-nltk python-pip libsnappy-dev ros-melodic-catkin python-catkin-tools libusb-dev libspnav-dev libbluetooth-dev libcwiid-dev ros-melodic-rviz-visual-tools build-essential cmake doxygen libqt4-dev libqt4-opengl-dev libqglviewer-dev-qt4 ros-melodic-moveit rospack-tools python-rosmake 
+yes Y | sudo apt-get install ros-melodic-desktop-full ros-melodic-hector-gazebo ros-melodic-openni-camera ros-melodic-roslisp python-rosinstall python-rdflib mercurial git openjdk-11-jdk libcgal-dev libpcl-dev libpstreams-dev libgraphviz-dev python-shapely python-networkx python-nltk python-pip libsnappy-dev ros-melodic-catkin python-catkin-tools libusb-dev libspnav-dev libbluetooth-dev libcwiid-dev ros-melodic-rviz-visual-tools build-essential cmake doxygen libqt4-dev libqt4-opengl-dev libqglviewer-dev-qt4 ros-melodic-moveit rospack-tools python-rosmake pcl-tools
 
 sudo rosdep init
 rosdep update
