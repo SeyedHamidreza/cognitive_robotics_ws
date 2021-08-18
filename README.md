@@ -41,7 +41,7 @@ In this assignment, students have to optimize an open-ended learning approach fo
 You can simply use the provided bash script to install all necessary packages on your machine. Let's see how to do that:
 
 
-## Clone ROS packages
+## Clone and Compile ROS packages
 
 Clone the repository in your home:
 
@@ -111,7 +111,7 @@ python -c 'import cv2; print(cv2.__version__)'
 
 ```
 
-## Compile ROS packages
+finally, we need to compile all packages:
 
 ```sh
 cd ~/cognitive_robotics_ws/
