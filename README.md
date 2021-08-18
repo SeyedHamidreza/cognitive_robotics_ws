@@ -46,6 +46,7 @@ Clone the repository in your home:
 
 ```sh
 cd ~
+sudo apt install git
 git clone https://github.com/SeyedHamidreza/cognitive_robotics_ws.git
 mv cognitive_robotics_ws/*.sh ~/
 ```
