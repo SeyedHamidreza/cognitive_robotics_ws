@@ -11,7 +11,7 @@ echo  "
 
 #Add ROS cognitive_robotics_ws as workspace
 source /opt/ros/melodic/setup.bash
-source $HOME/cognitive_robotics_ws/devel/setup.bash
+source \$HOME/cognitive_robotics_ws/devel/setup.bash
 
 export LD_LIBRARY_PATH=/opt/ros/melodic/lib:\${LD_LIBRARY_PATH:+:\${LD_LIBRARY_PATH}}
 export ROS_PACKAGE_PATH=\$HOME/cognitive_robotics_ws:/opt/ros/melodic/include:\${ROS_PACKAGE_PATH}
