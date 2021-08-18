@@ -7,11 +7,12 @@
 For detailed instructions, please read the [assignment description](https://github.com/SeyedHamidreza/cognitive_robotics_ws/blob/main/first_assignment_cognitive_robotics.pdf).
 
 ## Assignment overview
-Cognitive science revealed that humans learn to recognize object categories ceaselessly over time. This ability allowsthem to adapt to new environments,  by enhancing their knowledge from the accumulation of experiences and theconceptualization of new object categories. In particular, the agent can interact with the g this theory as an inspiration, we seek to create an interactive objectrecognition system that can learn 3D object categories in an open-ended fashion. In this project, “open-ended” implies thatthe set of categories to be learned is not known in advance. The training instances are extracted from on-line experiences of a robot, and thus become gradually available over time, rather than being completely available at the beginning of thelearning process.Your  goal  for  this  assignment  is  to  implement  an  open-ended  learning  approach for 3D object recognition. 
+Cognitive science revealed that humans learn to recognize object categories ceaselessly over time. This ability allows them to adapt to new environments,  by enhancing their knowledge from the accumulation of experiences and the conceptualization of new object categories. This ability allows them to adapt to new environments, by enhancing their knowledge from the accumulation of experiences and the conceptualization of new object categories. 
 
+Taking this theory as an inspiration, we seek to create an interactive objectrecognition system that can learn 3D object categories in an open-ended fashion. In this project, “open-ended” implies that the set of categories to be learned is not known in advance. The training instances are extracted from on-line experiences of a robot, and thus become gradually available over time, rather than being completely available at the beginning of thelearning process. 
 
+In this assignment, students have to optimize an open-ended learning approach for 3D object recognition and get familiar with the basic functionalities of ROS. We break this assignment down into two parts:
 
-We break this assignment down into two parts:
 1. The first part is about implementing/optimizing offline 3D object recognition systems, which take an object view as input and produces the category label as output (e.g., apple, mug, fork, etc).
 
 <p align="center">
