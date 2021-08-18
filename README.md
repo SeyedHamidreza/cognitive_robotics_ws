@@ -148,4 +148,8 @@ c++: internal compiler error: Killed (program cc1plus)
 
 It usually happens when the system does not have enough resources (RAM/Cores) to compile all packages simultaneously. This can be easily handled by running the "catkin_make -j 2" command in your terminal. This way, ROS will only use two cores. In particular, -j n,  specifies the number of jobs (commands) to run simultaneously. Defaults to the environment variable ROS_PARALLEL_JOBS and falls back to the number of CPU cores.
 
+#### 3- 
 
+```sh
+[rosrun] Couldn't find executable named multi_view_RGBD_object_representation.py below /home/hamidreza/cognitive_robotics_ws/src/student_ws/rug_deep_feature_extraction
+```
