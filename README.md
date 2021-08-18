@@ -126,7 +126,7 @@ catkin_make
 
 ## Datasets
 
-You can use any object dataset with this platform if you put them in correct format. As an example, checkout the layout of restaurant RGB-D object dataset: 
+You can use any object dataset with this platform if you  correctly layout the contents and set the dataset path param in the launch file. As an example, checkout the layout of restaurant RGB-D object dataset: 
 
 [Restaurant RGB-D object dataset](https://drive.google.com/file/d/1Ht-_Pw6P7GN_ZGfewoPaQDvucmwA7Z18/view?usp=sharing) | [Washington RGB-D object dataset](https://drive.google.com/file/d/1Uryc3Ehca3eJiGZ4vhdgZz3U6m4Ua6Wr/view?usp=sharing)
 
