@@ -98,7 +98,7 @@ sudo chmod +x setup_all_required_packages.sh
 To ensure that the installation process was successful, we can check the version of ROS, TF:
 
 ```bash
-source .bashrc
+close all your terminals and open a new one, or run "source .bashrc"
 
 # use the following line to check ROS version -> the output should be "melodic"
 rosversion -d
