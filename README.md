@@ -104,6 +104,9 @@ rosversion -d
 # use the following line to check Keras and TF -> the output should be "Using TensorFlow backend.  2.3.1"
 python -c 'import keras; print(keras.__version__)'
 
+# use the following line to check OpenCV -> the output should be "3.2.0"
+python -c 'import cv2; print(cv2.__version__)'
+
 ```
 
 ## Compile ROS packages
