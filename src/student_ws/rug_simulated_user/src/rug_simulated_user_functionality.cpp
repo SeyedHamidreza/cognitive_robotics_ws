@@ -19,7 +19,7 @@
 // 
 // ############################################################################
 
-/* _________________________________
+/* _______________________________
 |                                 |
 |           INCLUDES              |
 |_________________________________| */
@@ -80,13 +80,10 @@
 #include <race_perception_db/perception_db_serializer.h>
 
 //pcl includes
-
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/conversions.h>
 #include <pcl/io/pcd_io.h>
-
-// Need to include the pcl ros utilities
 
 //package includes
 #include <object_descriptor/object_descriptor_functionality.h>
@@ -101,7 +98,6 @@
 // define topic modelling service here
 #include <race_topic_modeling_services/topic_modelling.h>
 #include <rug_kfold_cross_validation/rug_kfold_cross_validation_functionality.h>
-
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
