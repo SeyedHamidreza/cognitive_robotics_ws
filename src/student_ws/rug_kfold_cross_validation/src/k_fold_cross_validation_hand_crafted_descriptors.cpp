@@ -11,20 +11,17 @@
 //             remaining data are used as training data. The cross-validation 
 //             process is then repeated 10 times, which each of the 10 folds 
 //             used exactly once as the test data.  
+//
+//   	See https://www.ai.rug.nl/irl-lab/
+// 
+//   	(Copyright) University of Groningen - AI Dep.
+// 
 // ############################################################################
 
-/* _________________________________
-   |                                 |
-   |          RUN SYSTEM BY          |
-   |_________________________________| */
-   
-//rm -rf /tmp/pdb
-//roslaunch race_kfold_cross_validation_evaluation dictionary_based_K_fold_cross_validation.launch
-
-/* _________________________________
-  |                                 |
-  |             INCLUDES            |
-  |_________________________________| */
+/* _______________________________
+|                                 |
+|             INCLUDES            |
+|_________________________________| */
   
 //system includes
 #include <std_msgs/String.h>
@@ -35,9 +32,7 @@
 #include <ros/ros.h>
 #include <ros/package.h>
 #include <sensor_msgs/PointCloud2.h>
-
 #include <pluginlib/class_list_macros.h> 
-#include <stdio.h>
 #include <race_perception_db/perception_db.h>
 #include <race_perception_db/perception_db_serializer.h>
 
@@ -57,23 +52,23 @@
 #include <object_conceptualizer/object_conceptualization.h>
 #include <race_perception_utils/print.h>
 #include <race_perception_msgs/CompleteRTOV.h>
-// 
 #include <object_descriptor/object_descriptor_functionality.h>
-#include <race_deep_learning_feature_extraction/deep_representation.h>
+
+// #include <race_deep_learning_feature_extraction/deep_representation.h>
 
 
-/* _________________________________
+/* _______________________________
 |                                 |
-|            constant            |
+|            constant             |
 |_________________________________| */
 #define spin_image_width 8
 #define subsample_spinimages 0
 #define spin_image_support_lenght 0.05
 
-/* _________________________________
-   |                                 |
-   |            NameSpace            |
-   |_________________________________| */
+/* _______________________________
+|                                 |
+|            NameSpace            |
+|_________________________________| */
 
 using namespace std;
 using namespace pcl;
@@ -83,10 +78,7 @@ using namespace race_perception_msgs;
 using namespace race_perception_utils;
 
 typedef pcl::PointXYZRGBA PointT;
-
-
 PerceptionDB* _pdb;
-
 
 /* __________________________
 |                            |
@@ -123,11 +115,11 @@ std::string evaluation_file;
 ofstream results , train_csv, test_csv;
 int TP =0, FP=0, FN=0, TPtmp =0, FPtmp=0, FNtmp=0, obj_no=0;
 
-
 std::vector< std::vector <int> > confusion_matrix;
 std::vector<string> map_category_name_to_index;
 
 
+//////////////////////////////////////////////////////////////////////////////////////////////////
 void evaluationFunction(const race_perception_msgs::RRTOV &result)
 {
 
@@ -213,64 +205,6 @@ void evaluationFunction(const race_perception_msgs::RRTOV &result)
     pp.printCallback();
     ros::spinOnce();
     
-}
-
-//////////////////////////////////////////////////////////////////////////////////////////////////
-
-int kFoldTrainAndTestDataGenerator( int K_fold, 
-                                    int iteration, 
-                                    vector<vector<SITOV> > categories_instances,
-                                    vector<vector<SITOV> > &categories_instances_train,
-                                    vector<vector<SITOV> > &categories_instances_test)
-{
-    /// iteration [0-9]. K_fold = 10
-    ROS_INFO(" ----------- fold%d -----------", iteration+1);
-    for (size_t i = 0; i < categories_instances.size(); i++) // retrieves all categories 
-    {                           
-        
-        int category_size = categories_instances.at(i).size();
-        ROS_INFO("category_size = %d", category_size);
-
-        int left_idx = 0, right_idx =0;
-
-        left_idx = int(category_size/K_fold) * (iteration);
-        
-        ROS_INFO("left_idx = %d", left_idx);
-
-        if (iteration != K_fold-1) 
-        {
-            right_idx = int(category_size/K_fold) * (iteration + 1);
-        }
-        else
-        {
-            right_idx = categories_instances.at(i).size();
-        }
-        ROS_INFO("right_idx = %d", right_idx);
-
-        
-        vector<SITOV> train_tmp;
-        vector<SITOV> test_tmp;
-        for (int j = 0; j < categories_instances.at(i).size(); j++)
-        {
-            if ((j >= left_idx) && (j < right_idx))   
-            {
-                test_tmp.push_back(categories_instances.at(i).at(j));
-                // std::cout << "name test = " << categories_instances.at(i).at(j).ground_truth_name << endl; 
-            }
-            else
-            {
-                train_tmp.push_back(categories_instances.at(i).at(j));
-                // std::cout << "name train = " << categories_instances.at(i).at(j).ground_truth_name << endl; 
-            }
-        }
-        ROS_INFO("---------------------------------");
-
-        categories_instances_train.push_back(train_tmp);
-        categories_instances_test.push_back(test_tmp);
-    
-    }
-        
-    return 0;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -520,7 +454,11 @@ int main(int argc, char** argv)
     //// get list of all object categories
     vector <ObjectCategory> list_of_object_category = _pdb->getAllObjectCat();
     while (list_of_object_category.size() == 0)
-		list_of_object_category = _pdb->getAllObjectCat();
+    {
+        list_of_object_category = _pdb->getAllObjectCat();
+        ros::Duration(0.2).sleep(); // sleep for 0.2 a second
+    }
+		
 
     ROS_INFO(" %d categories exist in the perception database ", list_of_object_category.size() );
 
