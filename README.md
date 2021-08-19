@@ -46,8 +46,8 @@ You can simply use the provided bash script to install all necessary packages on
 Clone the repository in your home:
 
 ```sh
-cd ~
 sudo apt install git
+cd ~
 git clone https://github.com/SeyedHamidreza/cognitive_robotics_ws.git
 mv cognitive_robotics_ws/*.sh ~/
 ```
