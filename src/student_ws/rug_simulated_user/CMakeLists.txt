@@ -34,8 +34,6 @@ set(PKG_DEPS
 	pcl_conversions
 	rug_kfold_cross_validation
 	rug_deep_feature_extraction
-  	race_deep_learning_feature_extraction
-  	race_topic_modeling_services
   	cv_bridge
 )
 
