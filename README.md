@@ -27,7 +27,7 @@ In this assignment, students have to optimize an open-ended learning approach fo
 
 
 <p align="center">
-  <img src="images/simulated_user.png" width="500" title="">
+  <img src="images/simulated_teacher.png" width="500" title="">
 </p>
 <p align="center">
   Fig.2 Abstract architecture for interaction between the simulated teacher and the learning agent
