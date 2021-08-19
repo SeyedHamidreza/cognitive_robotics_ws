@@ -68,7 +68,6 @@
 #include <race_perception_utils/print.h>
 #include <race_perception_msgs/CompleteRTOV.h>
 #include <race_perception_db/perception_db_serializer.h>
-
 #include <cv_bridge/cv_bridge.h>
 
 /* _________________________________
