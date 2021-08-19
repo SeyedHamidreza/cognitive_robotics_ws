@@ -1,25 +1,24 @@
 // ############################################################################
 //    
-//   Created: 	1/05/2014
+//   Created: 	1/09/2020
 //   Author : 	Hamidreza Kasaei
-//   Email  :	seyed.hamidreza@ua.pt
-//   Purpose: 	(Purely instance based learning approach)This program follows
-//   		the teaching protocol and autonomously interact with the system
-//   		using teach, ask and correct actions. For each newly taught category,
-//   		the average sucess of the system should be computed. To do that, 
-//   		the simulated teacher repeatedly picks object views of the currently
-//   		known categories from a database and presents them to the system for 
-//   		checking whether the system can recognize them. If not, the simulated
-//   		teacher provides corrective feedback.
+//   Email  :	hamidreza.kasaei@rug.nl
+//   Purpose: 	This program follows the teaching protocol and autonomously
+//		interact with the system using teach, ask and correct actions. 
+// 		For each newly taught category, the average sucess of the system
+// 		should be computed. To do that, the simulated teacher repeatedly 
+// 		picks object views of the currently known categories from a 
+// 		database and presents them to the system for checking whether 
+// 		the system can recognize them. If not, the simulated teacher provides
+// 		corrective feedback.
 //   		
-// 		This program is part of the RACE project, partially funded by the
-//   		European Commission under the 7th Framework Program.
 //
-//   		See http://www.project-race.eu
+//   	See https://www.ai.rug.nl/irl-lab/
 // 
-//   		(Copyright) University of Aveiro - RACE Consortium
+//   	(Copyright) University of Groningen - AI Dep.
 // 
 // ############################################################################
+
 
 /* _______________________________
 |                                 |
