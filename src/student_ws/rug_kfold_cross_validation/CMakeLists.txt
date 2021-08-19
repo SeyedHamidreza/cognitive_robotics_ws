@@ -33,7 +33,6 @@ set(PKG_DEPS
 	race_perception_db
  	race_perception_utils
  	rug_deep_feature_extraction
-	race_topic_modeling_services
 	cv_bridge
 )
 

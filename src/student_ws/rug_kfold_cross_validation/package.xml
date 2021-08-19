@@ -25,8 +25,6 @@
  	<build_depend>race_perception_utils</build_depend>
 	<build_depend>pcl_conversions</build_depend>
 	<build_depend>rug_deep_feature_extraction</build_depend>
-	<build_depend>race_topic_modeling_services</build_depend>
-  	<build_depend>race_grasp_pose_detection_services</build_depend>
   	<build_depend>cv_bridge</build_depend>
 
 
@@ -45,8 +43,6 @@
  	<run_depend>race_perception_utils</run_depend>
 	<run_depend>pcl_conversions</run_depend>
 	<run_depend>rug_deep_feature_extraction</run_depend>
-	<run_depend>race_topic_modeling_services</run_depend>
-	<run_depend>race_grasp_pose_detection_services</run_depend>
   	<run_depend>cv_bridge</run_depend>
 	
 </package>
