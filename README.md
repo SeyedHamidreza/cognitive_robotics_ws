@@ -116,7 +116,13 @@ Finally, we need to compile all packages:
 ```sh
 cd ~/cognitive_robotics_ws/
 catkin_make
+
+## make *.py files executable 
+roscd rug_deep_feature_extraction
+chmod +x src/*.py
 ```
+
+
 
 #### Notes: 
 
