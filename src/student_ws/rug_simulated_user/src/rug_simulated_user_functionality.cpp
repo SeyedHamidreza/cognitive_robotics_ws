@@ -19,17 +19,21 @@
 // 
 // ############################################################################
 
-/* _______________________________
+/* _________________________________
 |                                 |
 |           INCLUDES              |
 |_________________________________| */
 
-//ROS includes
+//ROS and PCL includes 
 #include <ros/ros.h>
+#include <ros/package.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl/conversions.h>
 #include <pcl/conversions.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
-#include <sensor_msgs/PointCloud2.h>
 #include <pcl/filters/conditional_removal.h>
 #include <pcl/sample_consensus/ransac.h>
 #include <pcl/sample_consensus/sac_model_plane.h>
@@ -54,7 +58,6 @@
 #include <visualization_msgs/Marker.h>
 #include <pcl/segmentation/conditional_euclidean_clustering.h>
 #include <pcl/visualization/cloud_viewer.h>
-#include <ros/package.h>
 #include <pcl/io/ply_io.h>
 #include <tf/tf.h>
 
@@ -68,37 +71,18 @@
 #include <CGAL/Plane_3.h>
 #include <algorithm>
 
-
-//ros includes 
-#include <ros/ros.h>
-#include <ros/package.h>
-#include <sensor_msgs/PointCloud2.h>
-
-//perception db includes
+//RACE perception includes
 #include <race_perception_msgs/perception_msgs.h>
 #include <race_perception_db/perception_db.h>
 #include <race_perception_db/perception_db_serializer.h>
-
-//pcl includes
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <pcl/conversions.h>
-#include <pcl/io/pcd_io.h>
-
-//package includes
 #include <object_descriptor/object_descriptor_functionality.h>
 #include <feature_extraction/spin_image.h>
 #include <object_conceptualizer/object_conceptualization.h>
 #include <race_perception_utils/print.h>
-
-// define deep learning service here
-#include <race_deep_learning_feature_extraction/deep_representation.h>
 #include <rug_deep_feature_extraction/deep_representation.h>
-
-// define topic modelling service here
-#include <race_topic_modeling_services/topic_modelling.h>
 #include <rug_kfold_cross_validation/rug_kfold_cross_validation_functionality.h>
 
+//OPENCV
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>

@@ -22,13 +22,6 @@
 
 /* _______________________________
 |                                 |
-|          RUN SYSTEM BY          |
-|_________________________________| */
-   
-	//roslaunch rug_simulated_user simulated_user_GOOD.launch
-
-/* _______________________________
-|                                 |
 |             INCLUDES            |
 |_________________________________| */
   
@@ -78,7 +71,6 @@ using namespace pcl;
 using namespace std;
 using namespace ros;
 using namespace race_perception_utils;
-
 typedef pcl::PointXYZRGBA PointT;
 
 /* _______________________________
@@ -98,6 +90,7 @@ string object_descriptor = "GOOD"; //// [GOOD, VFH, ESF, GRSD]
 int  number_of_bins = 50; //GOOD descriptor
 double normal_estimation_radius = 0.05; //ESF, GRSD descriptors
 std::string distance_function = "chiSquared";
+
 /* _______________________________
 |                                 |
 |    DO NOT CHANGE THESE PARAMS   |
@@ -110,7 +103,6 @@ int window_size = 3;
 double uniform_sampling_size = 0.03;
 double recognition_threshold = 200;
 int K_for_KNN = 3;
-
 
 unsigned int cat_id = 1;
 unsigned int track_id =1;
@@ -126,16 +118,17 @@ int threshold = 10;
 PerceptionDB* _pdb;
 typedef pcl::PointXYZRGBA PointT;
 
-  std::string evaluation_file, evaluationTable, precision_file, local_f1_vs_learned_category, f1_vs_learned_category;
+std::string evaluation_file, evaluationTable, precision_file, local_f1_vs_learned_category, f1_vs_learned_category;
 
-  std::ofstream summary_of_experiment , PrecisionMonitor, local_f1_vs_category, f1_vs_category, NumberofFeedback , category_random, instances_random, category_introduced;
-  int TP = 0, FP= 0, FN = 0, tp_tmp = 0, fp_tmp = 0, fn_tmp = 0, obj_num = 0, number_of_instances = 0;
+std::ofstream summary_of_experiment , PrecisionMonitor, local_f1_vs_category, f1_vs_category, NumberofFeedback , category_random, instances_random, category_introduced;
+int TP = 0, FP= 0, FN = 0, tp_tmp = 0, fp_tmp = 0, fn_tmp = 0, obj_num = 0, number_of_instances = 0;
 
-
-  vector <int> recognition_results; // we coded 0: continue(correctly detect unkown object)
-									// 1: TP , 2: FP , 3: FN , 4: FP and FN
+vector <int> recognition_results; // we coded 0: continue(correctly detect unkown object)
+								// 1: TP , 2: FP , 3: FN , 4: FP and FN
 				  
 
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
 void evaluationFunction(const race_perception_msgs::RRTOV &result)
 {
     PrettyPrint pp;
