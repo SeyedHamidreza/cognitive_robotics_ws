@@ -10,7 +10,7 @@
   Fig.1 Abstract architecture for interaction between the simulated teacher and the learning agent
 </p>
 
-For detailed instructions, please read the [assignment description](https://github.com/SeyedHamidreza/cognitive_robotics_ws/blob/main/first_assignment_cognitive_robotics.pdf).
+For detailed instructions, please read the [assignment description](https://github.com/SeyedHamidreza/cognitive_robotics_ws/blob/main/assignment_description.pdf).
 
 ## Assignment overview
 Cognitive science revealed that humans learn to recognize object categories ceaselessly over time. This ability allows them to adapt to new environments,  by enhancing their knowledge from the accumulation of experiences and the conceptualization of new object categories. This ability allows them to adapt to new environments, by enhancing their knowledge from the accumulation of experiences and the conceptualization of new object categories. 
