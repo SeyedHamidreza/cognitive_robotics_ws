@@ -181,3 +181,8 @@ if you face with opencv related error, you need to remove opencv-python and then
 sudo pip uninstall opencv-python
 python -c 'import cv2; print(cv2.__version__)'
 ```
+
+
+## TODO List
+
+- add script for running a bunch of experiments
