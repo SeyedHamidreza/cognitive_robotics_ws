@@ -162,9 +162,12 @@ It usually happens when the system does not have enough resources (RAM/Cores) to
 
 #### 3- not executable 
 
+If you face with the following error:
 ```sh
 [rosrun] Couldn't find executable named multi_view_RGBD_object_representation.py below .../cognitive_robotics_ws/src/student_ws/rug_deep_feature_extraction
 ```
+
+you need to make the python files executable
 
 ```sh
 roscd rug_deep_feature_extraction
