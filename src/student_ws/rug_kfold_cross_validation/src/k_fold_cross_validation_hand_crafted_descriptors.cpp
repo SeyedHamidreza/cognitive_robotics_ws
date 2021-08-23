@@ -415,7 +415,8 @@ int main(int argc, char** argv)
 
     results.close();
     
-    ros::Time begin_exp = ros::Time::now(); //start tic	
+    double training_time;
+    ros::Time begin_proc = ros::Time::now(); //start tic	
 
     bool debug = false;
 
@@ -445,10 +446,19 @@ int main(int argc, char** argv)
                                                                  number_of_bins, 
                                                                  normal_estimation_radius );
 
+   	    //// get toc
+        ros::Duration duration = ros::Time::now() - begin_proc;
+        training_time = duration.toSec();
+        ros::param::set("/training_time", training_time);
+        ROS_INFO("\t\t[-] training_time was %f seconds", training_time);  
+
+        begin_proc = ros::Time::now(); //start test tic	
     }
     else
     {
+        ros::param::get("/training_time", training_time);
         ROS_INFO("\t\t[-] training data has been loaded");  
+        ROS_INFO("\t\t[-] training_time was %f seconds", training_time);  
     }    
 
     //// get list of all object categories
@@ -628,11 +638,12 @@ int main(int argc, char** argv)
 
 
     results.close();
-    
+        
     //// get toc
-    ros::Duration duration = ros::Time::now() - beginProc;
-    double duration_sec = duration.toSec();
+    ros::Duration test_time = ros::Time::now() - beginProc;
+    double duration_sec = training_time + test_time.toSec();
     
+
     reportCurrentResults(TP, FP, FN, evaluation_file,1);
     results.open (evaluation_file.c_str(), std::ofstream::app);
     results << "\n\t - This expriment took " << duration_sec << " secs, and object recognition on average took "<< average_recognition_time / (float) number_of_objects <<" secs\n\n";
