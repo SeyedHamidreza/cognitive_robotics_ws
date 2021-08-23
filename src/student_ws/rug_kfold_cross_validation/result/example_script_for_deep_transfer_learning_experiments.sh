@@ -7,7 +7,7 @@ sleep 5
 mkdir $HOME/pdbs
 
 ## list of available networks : "vgg16_fc1", "vgg16_fc2", "vgg19_fc1", "vgg19_fc2", "xception", "resnet50", "mobileNet",  "mobileNetV2", 
-# 								"denseNet121", "denseNet169", "densenet201", "nasnetLarge", "/nasnetMobile", "inception",  "inceptionResnet" 
+# 				"denseNet121", "denseNet169", "densenet201", "nasnetLarge", "/nasnetMobile", "inception",  "inceptionResnet" 
 declare -a base_networks=( "mobileNetV2")
 
 ## list of available pooling functions : "MAX" "AVG" "APP"
