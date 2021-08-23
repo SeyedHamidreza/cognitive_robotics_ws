@@ -14,7 +14,8 @@ declare -a base_networks=( "mobileNetV2")
 ## list of available pooling functions : "MAX" "AVG" "APP"
 declare -a pooling=( "MAX" "AVG" "APP")
 
-## list of available distance functions : "cosine" "gower" "chiSquared" "KLDivergance" "symmetricKL" "motyka" "euclidean"  "intersection"  "dice" "bhattacharyya" "sorensen" "canberra" "pearson" "neyman"
+## list of available distance functions : "cosine" "gower" "chiSquared" "KLDivergance" "symmetricKL" "motyka" "euclidean"  "intersection"  
+#                                         "dice" "bhattacharyya" "sorensen" "canberra" "pearson" "neyman"
 declare -a distances=( "cosine" "euclidean" "chiSquared" "motyka" "symmetricKL" "motyka")
 
 for n in "${base_networks[@]}"; do	
