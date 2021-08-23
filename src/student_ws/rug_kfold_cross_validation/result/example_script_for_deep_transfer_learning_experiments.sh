@@ -4,6 +4,7 @@ roscore 2>/dev/null > /dev/null 2>&1 &
 echo "roscore is running"
 sleep 5
 
+rm -r $HOME/pdbs
 mkdir $HOME/pdbs
 
 ## list of available networks : "vgg16_fc1", "vgg16_fc2", "vgg19_fc1", "vgg19_fc2", "xception", "resnet50", "mobileNet",  "mobileNetV2", 
