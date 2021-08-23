@@ -166,8 +166,8 @@ def plot_graph(filename: str, axis: bool) -> Tuple[List[float], float]:
     for idx in range(1, len(ticks)):
         x_txt, y_txt, category = texts[idx].split('(')[1].split(',')[0:3]
         plt.text(eval(x_txt), eval(y_txt), category, fontsize=15, fontweight='bold')
-        x_tick = ticks[idx].split('[')[1].split(',')[0]
-        plt.axvline(x=eval(x_tick), ymax=precision[eval(x_tick)]/ymax, linestyle='--', color='#FF0000', linewidth=1)
+        x_tick = eval(ticks[idx].split('[')[1].split(',')[0]) - 1
+        plt.axvline(x=x_tick, ymax=precision[x_tick+1]/ymax, linestyle='--', color='#FF0000', linewidth=1)
 
     plt.plot(precision, 'b-', linewidth=2)
     plt.show()
