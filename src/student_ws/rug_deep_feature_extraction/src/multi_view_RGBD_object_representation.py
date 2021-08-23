@@ -24,8 +24,7 @@ from cv_bridge import CvBridge, CvBridgeError
 
 import tensorflow as tf
 from tensorflow import keras
-from keras.applications import mobilenet_v2
-from keras.applications.mobilenet import MobileNet
+from keras.applications import *
 from keras.preprocessing import image
 from keras.applications.mobilenet import preprocess_input
 from keras.models import Model
