@@ -28,9 +28,14 @@ In this assignment, students have to optimize an open-ended learning approach fo
 </p>
 
 
-2. The second part of this assignment is dedicated to testing your approach in an open-ended fashion.In this assignment, the number of categories is not pre-defined in advance and the knowledge of agent/robot is increasing over time by interacting with a simulated teacher using three actions: teach, ask, and correct (see Fig.1).
+2. The second part of this assignment is dedicated to testing your approach in an open-ended fashion.In this assignment, the number of categories is not pre-defined in advance and the knowledge of agent/robot is increasing over time by interacting with a simulated teacher using three actions: teach, ask, and correct.
 
-
+<p align="center">
+  <img src="images/simulated_teacher.png" width="700" title="">
+</p>
+<p align="center">
+  Fig.3 Abstract architecture for interaction between the simulated teacher and the learning agent
+</p>
 
 For detailed instructions, please read the [assignment description](https://github.com/SeyedHamidreza/cognitive_robotics_ws/blob/main/assignment_description.pdf).
 
