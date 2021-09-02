@@ -126,11 +126,11 @@ catkin_make
 ## make *.py files executable 
 roscd rug_deep_feature_extraction
 chmod +x src/*.py
-```
+
 roscd race_perception_utils
 cd bin
 chmod +x *.sh
-
+```
 
 #### Notes: 
 
