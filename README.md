@@ -140,11 +140,11 @@ chmod +x *.sh
 
 ## Datasets
 
-You can use any object dataset with this platform if you  correctly layout the contents and set the dataset path param in the launch file. As an example, checkout the layout of restaurant RGB-D object dataset: 
+For this assignment, you need to download the following datasets and put them inside a folder, named 'datasets', in your home folder
 
 [Restaurant RGB-D object dataset](https://drive.google.com/file/d/1Ht-_Pw6P7GN_ZGfewoPaQDvucmwA7Z18/view?usp=sharing) | [Washington RGB-D object dataset](https://drive.google.com/file/d/1Uryc3Ehca3eJiGZ4vhdgZz3U6m4Ua6Wr/view?usp=sharing)
 
-
+You can use any object dataset with this platform if you  correctly layout the contents and set the dataset path param in the launch file. As an example, checkout the layout of restaurant RGB-D object dataset: 
 
 ## Troubleshooting
 Here we provide a list of common errors and explain how to fix them. If the problem isn’t clear and you aren’t sure what to do next, contact TAs.
