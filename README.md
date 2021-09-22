@@ -131,6 +131,8 @@ chmod +x src/*.py
 roscd race_perception_utils
 cd bin
 chmod +x *.sh
+
+pip3 install numpy pandas seaborn
 ```
 
 #### Notes: 
