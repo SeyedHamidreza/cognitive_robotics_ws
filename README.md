@@ -63,8 +63,7 @@ Then, run the following lines:
 
 ```bash
 cd ~
-sudo chmod +x setup_bashrc.sh
-./setup_bashrc.sh
+bash setup_bashrc.sh
 ```
 
 Check your bashrc file using: 
@@ -93,7 +92,9 @@ alias python='/usr/bin/python2.7'
 
 ```
 
-Afterwards, you need to install all the necessary packages and software, including, ROS melodic, TF, Keras, and leveldb using "setup_all_required_packages.sh" script by running the following lines: 
+Afterwards, you need to install all the necessary packages and software, including, ROS melodic, TF, Keras, and leveldb using "setup_all_required_packages.sh" script by running the following lines. 
+
+* Note that you DO NOT need to run this command on the lab's computers as we already install all the necessary software: 
 
 ```bash
 cd ~
