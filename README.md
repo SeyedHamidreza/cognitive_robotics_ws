@@ -141,7 +141,7 @@ chmod +x *.sh
 
 ## Datasets
 
-For this assignment, you need to download the following datasets and put them inside a folder, named 'datasets', in your home folder
+For this assignment, you need to download the following datasets and put them inside a folder, named **datasets**, in your home folder
 
 [Restaurant RGB-D object dataset](https://drive.google.com/file/d/1Ht-_Pw6P7GN_ZGfewoPaQDvucmwA7Z18/view?usp=sharing) | [Washington RGB-D object dataset](https://drive.google.com/file/d/1Uryc3Ehca3eJiGZ4vhdgZz3U6m4Ua6Wr/view?usp=sharing)
 
