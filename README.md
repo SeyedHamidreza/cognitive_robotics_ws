@@ -132,6 +132,7 @@ roscd race_perception_utils
 cd bin
 chmod +x *.sh
 
+## we need these python packages for the visualization purposes
 pip3 install numpy pandas seaborn
 ```
 
