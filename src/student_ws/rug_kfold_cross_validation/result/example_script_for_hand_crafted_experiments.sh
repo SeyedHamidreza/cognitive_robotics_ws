@@ -25,9 +25,9 @@ for n in 1 6; do
 	for d in "${distances[@]}"; do
 		let k=1		
 		echo "$d"
-		echo roslaunch rug_kfold_cross_validation kfold_cross_validation_hand_crafted_descriptor.launch distance_function:=$i object_discriptor:=GOOD number_of_bins:=$bins  distance_function:=$d running_a_bunch_of_experiments:=false K_for_KNN:=$k name_of_approach:=TEST_COR
+		echo roslaunch rug_kfold_cross_validation kfold_cross_validation_hand_crafted_descriptor.launch object_descriptor:=GOOD number_of_bins:=$bins  distance_function:=$d running_a_bunch_of_experiments:=false K_for_KNN:=$k name_of_approach:=TEST_COR
 
-		roslaunch rug_kfold_cross_validation kfold_cross_validation_hand_crafted_descriptor.launch distance_function:=$i object_discriptor:=GOOD number_of_bins:=$bins  distance_function:=$d running_a_bunch_of_experiments:=false K_for_KNN:=$k name_of_approach:=TEST_COR
+		roslaunch rug_kfold_cross_validation kfold_cross_validation_hand_crafted_descriptor.launch object_descriptor:=GOOD number_of_bins:=$bins  distance_function:=$d running_a_bunch_of_experiments:=false K_for_KNN:=$k name_of_approach:=TEST_COR
 
 		mv "experiment_1" "exp_$exp"
 		mv "exp_$exp" "hand_crafted_results"					
@@ -37,9 +37,9 @@ for n in 1 6; do
 		mv /tmp/pdb/ $HOME/pdbs/GOOD/pdb_$bins"_bins"/pdb 	
 	
 		for k in 3 5 7 9; do 	
-			echo roslaunch rug_kfold_cross_validation kfold_cross_validation_hand_crafted_descriptor.launch distance_function:=$i object_discriptor:=GOOD number_of_bins:=$bins  distance_function:=$d running_a_bunch_of_experiments:=true K_for_KNN:=$k pdb_loaded:=true pdb_source:=$HOME/pdbs/GOOD/pdb_$bins"_bins"/pdb name_of_approach:=TEST_COR
+			echo roslaunch rug_kfold_cross_validation kfold_cross_validation_hand_crafted_descriptor.launch object_descriptor:=GOOD number_of_bins:=$bins  distance_function:=$d running_a_bunch_of_experiments:=true K_for_KNN:=$k pdb_loaded:=true pdb_source:=$HOME/pdbs/GOOD/pdb_$bins"_bins"/pdb name_of_approach:=TEST_COR
 
-			roslaunch rug_kfold_cross_validation kfold_cross_validation_hand_crafted_descriptor.launch distance_function:=$i object_discriptor:=GOOD number_of_bins:=$bins  distance_function:=$d running_a_bunch_of_experiments:=true K_for_KNN:=$k pdb_loaded:=true pdb_source:=$HOME/pdbs/GOOD/pdb_$bins"_bins"/pdb name_of_approach:=TEST_COR
+			roslaunch rug_kfold_cross_validation kfold_cross_validation_hand_crafted_descriptor.launch object_descriptor:=GOOD number_of_bins:=$bins  distance_function:=$d running_a_bunch_of_experiments:=true K_for_KNN:=$k pdb_loaded:=true pdb_source:=$HOME/pdbs/GOOD/pdb_$bins"_bins"/pdb name_of_approach:=TEST_COR
 
 			mv "experiment_1" "exp_$exp"
 		   	mv "exp_$exp" "hand_crafted_results"					
