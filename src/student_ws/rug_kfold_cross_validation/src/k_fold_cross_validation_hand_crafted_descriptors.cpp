@@ -461,6 +461,8 @@ int main(int argc, char** argv)
         ROS_INFO("\t\t[-] training_time was %f seconds", training_time);  
     }    
 
+	begin_proc = ros::Time::now(); //start tic
+	
     //// get list of all object categories
     vector <ObjectCategory> list_of_object_category = _pdb->getAllObjectCat();
     while (list_of_object_category.size() == 0)
