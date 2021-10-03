@@ -19,18 +19,23 @@ import numpy as np
 import math
 import cv2
 import matplotlib.pyplot as plt
+import warnings
+warnings.filterwarnings("ignore")
 
 from cv_bridge import CvBridge, CvBridgeError
 
 import tensorflow as tf
 from tensorflow import keras
 from keras.applications import *
+#from keras.applications.mobilenet import MobileNet
 from keras.preprocessing import image
 from keras.applications.mobilenet import preprocess_input
 from keras.models import Model
 from tensorflow.keras import layers
 from keras import backend as K
 from keras.utils import plot_model
+
+tf.config.optimizer.set_jit(True) # Reduces latency by using XLA features
 
 from pytictoc import TicToc
 import time
@@ -44,6 +49,7 @@ from tensorflow.keras.models import load_model
 
 np.set_printoptions(threshold=sys.maxsize)
 np.set_printoptions(threshold=np.inf)
+
 
 def preprocessingForOrthographicImages (img, image_size):
     
@@ -71,10 +77,11 @@ def preprocessingForOrthographicImages (img, image_size):
 # "/inception_resnet_service", "/inception_service", "/autoencoder_service" 
 
 base_network = str(sys.argv[1])
-print ("1 --- base_network = " + str(base_network))
+# print ("1 --- base_network = " + str(base_network))
 
 
 recognition_network = "MobileNet"
+image_size = 224 # Makes this a global parameter instead
 
 # Load the Network.
 graph = tf.Graph()
@@ -119,6 +126,7 @@ with graph.as_default():
         elif (base_network == "xception"):
             xception_model = xception.Xception(weights='imagenet', include_top=True)
             encoder = Model(inputs=xception_model.input, outputs=xception_model.get_layer('avg_pool').output)
+            image_size = 299 #fix
             #xception_model._make_predict_function()
             #plot_model(xception_model, to_file='model.png')
             print(xception_model.summary())
@@ -182,6 +190,7 @@ with graph.as_default():
         elif (base_network == "inception"):
             inception_model = inception_v3.InceptionV3(weights='imagenet', include_top=True)
             encoder = Model(inputs=inception_model.input, outputs=inception_model.get_layer('avg_pool').output)
+            image_size = 299 # fix
             #inception_model._make_predict_function()
             #plot_model(inception_model, to_file='model.png')
             print(inception_model.summary())
@@ -192,15 +201,21 @@ with graph.as_default():
             #inception_resnet_model._make_predict_function()
             #plot_model(inception_resnet_model, to_file='model.png')
             print(inception_resnet_model.summary())     
+
+        elif (base_network == "effNet"):
+            effnet_model = efficientnet.EfficientNetB3(weights='imagenet', include_top=True)
+            encoder = Model(inputs=effnet_model.input, outputs=effnet_model.get_layer('avg_pool').output)
+            #inception_resnet_model._make_predict_function()
+            #plot_model(inception_resnet_model, to_file='model.png')
+            print(effnet_model.summary())     
         else:
             print("The selected network has not been implemented yet -- please choose another network!")
             exit() 
 
-              
-
 tmp_img = 0
 
 def handle_deep_representation(req):
+    global image_size # allows to fix the global parameter for the image
 
     #__________________________
     #|                         |
@@ -223,19 +238,19 @@ def handle_deep_representation(req):
 
     if rospy.has_param('/perception/base_network'):
         base_network = rospy.get_param("/perception/base_network")
-        print ("\t - base_network = " + str(base_network))
+        # print ("\t - base_network = " + str(base_network))
 
     if rospy.has_param('/perception/pooling_function'):
         pooling_function = rospy.get_param("/perception/pooling_function")
-        print ("\t - pooling_function = " + str(pooling_function))
+        # print ("\t - pooling_function = " + str(pooling_function))
     
     if rospy.has_param('/perception/orthographic_image_resolution'):
         number_of_bins = rospy.get_param("/perception/orthographic_image_resolution")
-        print ("\t - orthographic_image_resolution = " + str(number_of_bins)) 
+        # print ("\t - orthographic_image_resolution = " + str(number_of_bins)) 
 
     if rospy.has_param('/perception/gui'):
         gui = rospy.get_param("/perception/gui")
-        print ("\t - gui = " + str(gui)) 
+        # print ("\t - gui = " + str(gui)) 
 
     #__________________________
     #|                         |
@@ -243,9 +258,8 @@ def handle_deep_representation(req):
     #|_________________________|
 
     number_of_views = int(len(req.good_representation) / (number_of_bins*number_of_bins))
-    print ("\t - number_of_views = " + str(number_of_views))
-                   
-    image_size = 224
+    # print ("\t - number_of_views = " + str(number_of_views))
+                
     #normalization 
     #The mean pixel values are taken from the VGG authors, 
     # which are the values computed from the training dataset.
@@ -268,8 +282,6 @@ def handle_deep_representation(req):
         with graph.as_default():
             with session.as_default():
                 ## We represent each image as a feature vector
-		        ##TODO: image_size should be a param, some networks accept 300*300 input image
-                image_size = 224
                 resized_img, othographic_image = preprocessingForOrthographicImages(img, image_size)
 
                 img_g = cv2.merge((othographic_image, othographic_image, othographic_image))
@@ -292,7 +304,6 @@ def handle_deep_representation(req):
     ### deep feature vector of rgb and depth imgaes
     try:
 
-        image_size = 224
         bridge = CvBridge()
         cv_rgb_image = bridge.imgmsg_to_cv2(req.RGB_image, "bgr8")
         resized_rgb_img, othographic_image = preprocessingForOrthographicImages(cv_rgb_image, image_size)                            
@@ -303,7 +314,7 @@ def handle_deep_representation(req):
 
         cv_depth_image = bridge.imgmsg_to_cv2(req.depth_image, "bgr8")      
         resized_depth_img, othographic_depth_image = preprocessingForOrthographicImages(cv_depth_image, image_size)                
-       
+    
         if (gui):
             cv2.imshow('Depth_image', resized_depth_img)
             cv2.waitKey(1)
@@ -315,7 +326,7 @@ def handle_deep_representation(req):
                 x_rgb = np.expand_dims(x_rgb, axis=0)
                 x_rgb = preprocess_input(x_rgb)
                 feature = encoder.predict(x_rgb)
-               
+            
         # pooling functions # size of feature can be check first and then do this part
         if (pooling_function == "MAX"):
             global_object_representation = np.max([global_object_representation, feature], axis=0)
@@ -331,7 +342,7 @@ def handle_deep_representation(req):
                 x_depth = np.expand_dims(x_depth, axis=0)
                 x_depth = preprocess_input(x_depth)
                 feature = encoder.predict(x_depth)
-               
+            
         # pooling functions # size of feature can be check first and then do this part
         if (pooling_function == "MAX"):
             global_object_representation = np.max([global_object_representation, feature], axis=0)
@@ -343,23 +354,20 @@ def handle_deep_representation(req):
     except CvBridgeError as e:
         print(e)
         print ("error visualize image")
-
-      
+    
     
     toc_global = time.clock()
-    print ("\t - size of representation is "+ str(global_object_representation.shape))
-    print ("\t - deep object representation took " + str (toc_global - tic_global))
-    print ("----------------------------------------------------------")            
+    # print ("\t - size of representation is "+ str(global_object_representation.shape))
+    # print ("\t - deep object representation took " + str (toc_global - tic_global))
+    # print ("----------------------------------------------------------")            
     return deep_representationResponse(global_object_representation[0])
 
 
 def RGBD_multiview_service():
     rospy.init_node('deep_learning_representation_server')
     s = rospy.Service('RGBD_multiview_service', deep_representation, handle_deep_representation)
-    print "Ready to representas RGBD object based on " + base_network + " network."
+    print("Ready to representas RGBD object based on " + base_network + " network.")
     rospy.spin()
 
 if __name__ == "__main__":
     RGBD_multiview_service()
-
-
