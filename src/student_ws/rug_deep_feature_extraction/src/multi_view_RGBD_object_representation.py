@@ -230,27 +230,27 @@ def handle_deep_representation(req):
     gui = True
     if rospy.has_param('/perception/image_normalization'):
         image_normalization = rospy.get_param("/perception/image_normalization")
-        #print ("########## image_normalization (0 : FALSE, 1 : TRUE) = " + str(image_normalization))
+        print ("########## image_normalization (0 : FALSE, 1 : TRUE) = " + str(image_normalization))
 
     if rospy.has_param('/perception/multiviews'):
         multiviews = rospy.get_param("/perception/multiviews")
-        #print ("########## multiviews (0 : FALSE, 1 : TRUE) = " + str(multiviews))
+        print ("########## multiviews (0 : FALSE, 1 : TRUE) = " + str(multiviews))
 
     if rospy.has_param('/perception/base_network'):
         base_network = rospy.get_param("/perception/base_network")
-        # print ("\t - base_network = " + str(base_network))
+        print ("\t - base_network = " + str(base_network))
 
     if rospy.has_param('/perception/pooling_function'):
         pooling_function = rospy.get_param("/perception/pooling_function")
-        # print ("\t - pooling_function = " + str(pooling_function))
+        print ("\t - pooling_function = " + str(pooling_function))
     
     if rospy.has_param('/perception/orthographic_image_resolution'):
         number_of_bins = rospy.get_param("/perception/orthographic_image_resolution")
-        # print ("\t - orthographic_image_resolution = " + str(number_of_bins)) 
+        print ("\t - orthographic_image_resolution = " + str(number_of_bins)) 
 
     if rospy.has_param('/perception/gui'):
         gui = rospy.get_param("/perception/gui")
-        # print ("\t - gui = " + str(gui)) 
+        print ("\t - gui = " + str(gui)) 
 
     #__________________________
     #|                         |
