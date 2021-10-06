@@ -166,8 +166,8 @@ def plot_graph(filename: str, axis: bool) -> Tuple[List[float], float]:
     for idx in range(1, len(ticks)):
         x_txt, y_txt, category = texts[idx].split('(')[1].split(',')[0:3]
         plt.text(eval(x_txt), eval(y_txt), category, fontsize=15, fontweight='bold')
-        x_tick = eval(ticks[idx].split('[')[1].split(',')[0]) - 1
-        plt.axvline(x=x_tick, ymax=precision[x_tick+1]/ymax, linestyle='--', color='#FF0000', linewidth=1)
+        x_tick = ticks[idx].split('[')[1].split(',')[0]
+        plt.axvline(x=eval(x_tick), ymax=precision[eval(x_tick)]/ymax, linestyle='--', color='#FF0000', linewidth=1)
 
     plt.plot(precision, 'b-', linewidth=2)
     plt.show()
@@ -247,7 +247,10 @@ def get_confusion_matrix_nparray(directory_path: str):
 
 def plot_conf_matrix(conf_matrix_array, categories):
     # quantity to percentages
-    conf_matrix_array_percentages = (conf_matrix_array / conf_matrix_array.sum(axis=0)) * 100.0
+    conf_matrix_array_percentages = (conf_matrix_array / conf_matrix_array.sum(axis=1)) * 100.0
+    for i in range (conf_matrix_array_percentages.shape[1]):
+       conf_matrix_array_percentages[i,:] = (conf_matrix_array[i,:] / conf_matrix_array[i,:].sum())* 100.0
+
     # Create the labels by combining the quantities and percentages
     labels = (
         np.asarray(
