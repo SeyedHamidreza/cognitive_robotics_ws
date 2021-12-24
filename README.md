@@ -193,7 +193,7 @@ sudo pip uninstall opencv-python
 python -c 'import cv2; print(cv2.__version__)'
 ```
 
-#### 5- TF 1.14 seems to work with protobuf==3.17.3 and is not compatiple with protobuf > 3.18
+#### 5- TF 1.14 seems to work with protobuf==3.17.3 and is not compatiple with protobuf >= 3.18
 
 If you are faced with the following error: 
 
