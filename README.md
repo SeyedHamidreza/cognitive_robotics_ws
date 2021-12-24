@@ -193,7 +193,24 @@ sudo pip uninstall opencv-python
 python -c 'import cv2; print(cv2.__version__)'
 ```
 
+#### 5- TF 1.14 seems to work with protobuf==3.17.3 and is not compatiple with protobuf > 3.18
+
+If you are faced with the following error: 
+
+```sh
+class DescriptorBase(metaclass=DescriptorMetaclass):
+                              ^
+SyntaxError: invalid syntax
+```
+
+downgrading protobuf to 3.17.3 would solve the problem
+
+```sh
+pip2 uninstall protobuf
+pip2 install protobuf==3.17.3
+```
+
 ## TODO
 
 - add related references to this repo
-
+- change all deep learning based packages to pytorch 
