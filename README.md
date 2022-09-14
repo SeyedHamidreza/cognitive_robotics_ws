@@ -10,6 +10,9 @@
   Fig.1 Abstract architecture for interaction between the simulated teacher and the learning agent
 </p>
 
+## System requirment 
+- Ubuntu 18.04
+- An installation script is provided for installing other packages (please find it below)
 
 ## Assignment overview
 Cognitive science revealed that humans learn to recognize object categories ceaselessly over time. This ability allows them to adapt to new environments,  by enhancing their knowledge from the accumulation of experiences and the conceptualization of new object categories. This ability allows them to adapt to new environments, by enhancing their knowledge from the accumulation of experiences and the conceptualization of new object categories. 
