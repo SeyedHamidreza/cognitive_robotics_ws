@@ -70,6 +70,8 @@ yes Y | sudo apt-get install terminator
 #4- Install KERAS and 
 echo "-------- [Step-4] Install KERAS= and TF==1.14.0 --------"
 
+yes Y | sudo pip install --upgrade pip
+yes Y | sudo pip install --upgrade protobuf
 yes Y | sudo pip install tensorflow==1.14.0
 yes Y | sudo pip install keras==2.3.1
 yes Y | sudo pip install pytictoc
