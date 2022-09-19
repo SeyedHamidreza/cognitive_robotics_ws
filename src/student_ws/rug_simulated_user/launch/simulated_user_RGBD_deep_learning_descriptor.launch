@@ -40,7 +40,7 @@
 	<!--       set name_of_approach and number of experiments parameters    -->
 	<!-- *****************************************************************  -->
 
-		<arg name="name_of_approach" default="COR_2021_DL" />
+		<arg name="name_of_approach" default="COR_DL" />
 		<param name="/perception/name_of_approach" type="string" value = "$(arg name_of_approach)"/>
 
 		<!-- total_number_of_experiments params -->
