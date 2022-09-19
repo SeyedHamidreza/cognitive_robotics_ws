@@ -22,7 +22,7 @@
 
 ## System requirment 
 - Ubuntu 18.04
-- An installation script is provided for installing all necessary packages (please find it below)
+- An installation script is provided to setup all necessary packages (please find it below)
 
 
 ## Assignment overview
