@@ -1,6 +1,6 @@
 ## Open-Ended Learning Approaches for 3D Object Recognition
 
-###### [Hamidreza Kasaei](https://hkasaei.github.io/) | [cognitive robotics course](https://rugcognitiverobotics.github.io/) | [assignment description](https://github.com/SeyedHamidreza/cognitive_robotics_ws/blob/main/assignment_description.pdf)
+###### [Hamidreza Kasaei](https://hkasaei.github.io/) | [cognitive robotics course](https://rugcognitiverobotics.github.io/) | [assignment description](https://github.com/SeyedHamidreza/cognitive_robotics_ws/blob/main/assignment_description.pdf) | [IRL-Lab](https://www.ai.rug.nl/irl-lab/)
 ##
 
 <p align="center">
