@@ -44,7 +44,7 @@ In this assignment, students have to optimize an open-ended learning approach fo
 For detailed instructions, please read the [assignment description](https://github.com/SeyedHamidreza/cognitive_robotics_ws/blob/main/assignment_description.pdf).
 
 
-## Installation on robotics Lab's computers
+## Installation on robotics lab's computers
 
 Simply clone this repository in the home/ folder:
 
