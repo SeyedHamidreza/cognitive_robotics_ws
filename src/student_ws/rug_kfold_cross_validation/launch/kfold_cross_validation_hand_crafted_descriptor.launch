@@ -36,7 +36,7 @@
 	<!--|_________________________________|-->
 
 		<!-- name of approach -->
-		<arg name="name_of_approach" default="COR_2021_HC" />
+		<arg name="name_of_approach" default="COR_HC" />
 		<param name="/perception/name_of_approach" type="string" value = "$(arg name_of_approach)"/>
 
 		<!-- ****************************************  -->
