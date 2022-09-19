@@ -12,7 +12,8 @@
 
 ## System requirment 
 - Ubuntu 18.04
-- An installation script is provided for installing other packages (please find it below)
+- An installation script is provided for installing all necessary packages (please find it below)
+
 
 ## Assignment overview
 Cognitive science revealed that humans learn to recognize object categories ceaselessly over time. This ability allows them to adapt to new environments,  by enhancing their knowledge from the accumulation of experiences and the conceptualization of new object categories. This ability allows them to adapt to new environments, by enhancing their knowledge from the accumulation of experiences and the conceptualization of new object categories. 
@@ -43,9 +44,32 @@ In this assignment, students have to optimize an open-ended learning approach fo
 For detailed instructions, please read the [assignment description](https://github.com/SeyedHamidreza/cognitive_robotics_ws/blob/main/assignment_description.pdf).
 
 
+## Installation on robotics Lab's computers
+
+Simply clone this repository in the home/ folder:
+
+```sh
+cd ~
+git clone https://github.com/SeyedHamidreza/cognitive_robotics_ws.git
+```
+and then, compile all packages by running the following commands:
+
+```sh
+cd ~/cognitive_robotics_ws/
+catkin_make
+
+## make *.py files executable 
+roscd rug_deep_feature_extraction
+chmod +x src/*.py
+
+roscd race_perception_utils
+cd bin
+chmod +x *.sh
+
+```
 
 
-## Installation
+## Installation on your computer 
 
 You can simply use the provided bash script to install all necessary packages on your machine. Let's see how to do that:
 
