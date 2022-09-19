@@ -10,6 +10,16 @@
   Fig.1 Abstract architecture for interaction between the simulated teacher and the learning agent
 </p>
 
+## Contents
+
+- [System requirment](#system-requirment )
+- [Assignment overview](#assignment-overview)
+- [Installation on robotics lab's computers](#installation-on-robotics-lab's-computers)
+- [Installation on your computer](#installation-on-your-computer)
+- [Datasets](#datasets)
+- [Troubleshooting](#troubleshooting)
+
+
 ## System requirment 
 - Ubuntu 18.04
 - An installation script is provided for installing all necessary packages (please find it below)
