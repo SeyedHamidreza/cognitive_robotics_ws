@@ -2090,14 +2090,14 @@ int reportAllHandCraftedExperiments( 	int TP, int FP, int FN,
 			results_of_experiments << "\n" << exp_num << "\t" << object_descriptor <<"\t\t"<< descriptor_param <<"\t" << K <<"\t"<< distance_function << "\t\t"<< f_measure << "\t"<< avg_class_accuracy << "\t\t"<< duration_sec;        		    
 		
 		}	
-		else if (object_descriptor == "VFH")
+		else if (object_descriptor == "VFH" || object_descriptor == "GRSD")
 		{
 			results_of_experiments << "EXP"<< "\t" << "Descriptor." << "\t"<< "radius"<< "\t\t"<< "Dist.Func."<< "\t\t"<< "Ins-Acc" << "\t"<< "Avg-Class-Acc"<<"\tTime(s)";
 			results_of_experiments << "\n---------------------------------------------------------------------------------------------------------";       
 			results_of_experiments << "\n" << exp_num << "\t" << object_descriptor <<"\t\t"<< descriptor_param <<"\t" << K <<"\t"<< distance_function << "\t\t"<< f_measure << "\t"<< avg_class_accuracy << "\t\t"<< duration_sec;
 		
 		}
-		else if (object_descriptor == "ESF")
+		else if (object_descriptor == "ESF" )
 		{
 			results_of_experiments << "EXP"<< "\t" << "Descriptor." << "\t\t"<< "Dist.Func."<< "\t\t"<< "Ins-Acc" << "\t"<< "Avg-Class-Acc"<<"\tTime(s)";
 			results_of_experiments << "\n---------------------------------------------------------------------------------------------------------";       
@@ -2105,6 +2105,7 @@ int reportAllHandCraftedExperiments( 	int TP, int FP, int FN,
 			
 
 		}
+	        
 		
 		results_of_experiments << "\n---------------------------------------------------------------------------------------------------------";       
 		results_of_experiments.close();
@@ -2135,7 +2136,7 @@ int reportAllHandCraftedExperiments( 	int TP, int FP, int FN,
 		{
 			results_of_experiments << "\n" << exp_num << "\t" << object_descriptor <<"\t\t"<< descriptor_param <<"\t" << K <<"\t"<< distance_function << "\t\t"<< f_measure << "\t"<< avg_class_accuracy << "\t\t"<< duration_sec;
 		}	
-		else if (object_descriptor == "VFH")
+		else if (object_descriptor == "VFH" || object_descriptor == "GRSD")
 		{
 			results_of_experiments << "\n" << exp_num << "\t" << object_descriptor <<"\t\t"<< descriptor_param <<"\t" << K <<"\t"<< distance_function << "\t\t"<< f_measure << "\t"<< avg_class_accuracy << "\t\t"<< duration_sec;
 		}
