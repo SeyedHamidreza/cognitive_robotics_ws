@@ -72,7 +72,7 @@
 		<!--       		distance functions		       -->
 		<!-- ****************************************  -->
 		
-			<!-- possible options are : chiSquared, kLDivergance, motyka,  divergence,  euclidean, intersection, manhattan,
+			<!-- possible options are : chiSquared, symmetricKL, kLDivergance, motyka,  divergence,  euclidean, intersection, manhattan,
 			cosine, dice, bhattacharyya, sorensen, canberra, pearson, neyman, gower -->
 			<arg name="distance_function" default="motyka" />
 			<param name="/perception/distance_function" type="string" value = "$(arg distance_function)"/>
