@@ -16,7 +16,7 @@ mkdir COR/deep_learning_exps;
 
 let exp_num=1
 
-for i in `seq 1 10`; do 
+for i in `seq 1 3`; do 
 
 	### NOTE: Make sure that you have set the proper value for each param in the launch file
 	echo roslaunch rug_simulated_user simulated_user_hand_crafted_descriptor.launch random_sequence_generator:=true name_of_approach:="hand_crafted_exps"
