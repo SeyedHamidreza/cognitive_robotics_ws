@@ -44,7 +44,7 @@
 		<param name="/perception/name_of_approach" type="string" value = "$(arg name_of_approach)"/>
 
 		<!-- total_number_of_experiments params -->
-		<arg name="total_number_of_experiments" default="10" />
+		<arg name="total_number_of_experiments" default="3" />
 		<param name="/total_number_of_experiments" type="int" value = "$(arg total_number_of_experiments)"/>
 
 		<!-- random_sequence_generator 0 = FLASE, 1 = TRUE-->
