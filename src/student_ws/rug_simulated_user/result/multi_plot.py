@@ -23,7 +23,7 @@ def main(paths_to_dumps: str):
     for path in paths:
         dumps.append(pickle.load(open(path, "rb")))
 
-    globalF1s, localF1s_lines, nlis, nics_cats, precs_lines = zip(*dumps)
+    globalF1s, nlis, nics_cats, precs_lines = zip(*dumps)
     localF1s, lines = zip(*localF1s_lines)
     nics, cats = zip(*nics_cats)
     precs, lines_ = zip(*precs_lines)
@@ -42,18 +42,18 @@ def main(paths_to_dumps: str):
     plt.show()
 
     # plot localF1s
-    plt.figure(1)
-    plt.grid(True)
-    plt.xlabel('Number of Learned Categories', fontsize=15)
-    plt.ylabel('Protocol Accuracy', fontsize=15)
-    plt.title('Local F1 vs Learned Categories')
-    for idx, l in enumerate(localF1s):
-        x = list(range(1, len(l)+1))
-        plt.plot(x, l, colors_map[idx]+'-', label=f'exp_{idx+1}', linewidth=2)
-        plt.plot(x, l, 'ro', linewidth=2)
-        plt.plot(x, [lines[idx]] * len(l), colors_map[idx], linewidth=2)
-    plt.legend()
-    plt.show()
+    #plt.figure(1)
+    #plt.grid(True)
+    #plt.xlabel('Number of Learned Categories', fontsize=15)
+    #plt.ylabel('Protocol Accuracy', fontsize=15)
+    #plt.title('Local F1 vs Learned Categories')
+    #for idx, l in enumerate(localF1s):
+    #    x = list(range(1, len(l)+1))
+    #    plt.plot(x, l, colors_map[idx]+'-', label=f'exp_{idx+1}', linewidth=2)
+    #    plt.plot(x, l, 'ro', linewidth=2)
+    #    plt.plot(x, [lines[idx]] * len(l), colors_map[idx], linewidth=2)
+    #plt.legend()
+    #plt.show()
 
     # plot NLIs
     plt.figure(2)
